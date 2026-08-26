@@ -87,11 +87,22 @@ export function useTeamPresence() {
 
   const updateMemberStatus = async (id: string, status: PresenceStatus, statusNote?: string) => {
     if (!supabase) return;
+    const previous = members.find((member) => member.id === id);
+    const updatedAt = new Date().toISOString();
     const changes: Pick<TeamMemberRow, 'status'> & Partial<Pick<TeamMemberRow, 'status_note'>> = { status };
     if (statusNote !== undefined) changes.status_note = statusNote || null;
 
+    setMembers((current) => current.map((member) => member.id === id
+      ? { ...member, status, ...(statusNote !== undefined && { statusNote: statusNote || undefined }), updatedAt }
+      : member));
+
     const { error: updateError } = await supabase.from('team_members').update(changes).eq('id', id);
-    if (updateError) setError(updateError.message);
+    if (updateError) {
+      if (previous) setMembers((current) => current.map((member) => member.id === id ? previous : member));
+      setError(updateError.message);
+    } else {
+      setError(null);
+    }
   };
 
   const addMember = async (member: Omit<TeamMember, 'id' | 'updatedAt'>) => {
