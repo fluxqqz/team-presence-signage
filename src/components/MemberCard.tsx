@@ -1,184 +1,22 @@
 import React, { useState } from 'react';
-import { TeamMember, PresenceStatus, STATUS_CONFIG } from '../types';
+import { Check, Clock, Edit2, MessageSquare, Trash2 } from 'lucide-react';
+import { PresenceStatus, STATUS_CONFIG, TeamMember } from '../types';
 import { StatusBadge } from './StatusBadge';
-import { Clock, MessageSquare, Check, Edit2, Trash2 } from 'lucide-react';
 
-interface MemberCardProps {
-  member: TeamMember;
-  onUpdateStatus: (id: string, status: PresenceStatus, note?: string) => void;
-  onEdit: (member: TeamMember) => void;
-  onDelete: (id: string) => void;
-}
+interface MemberCardProps { member: TeamMember; onUpdateStatus: (id: string, status: PresenceStatus, note?: string) => void; onEdit: (member: TeamMember) => void; onDelete: (id: string) => void; }
 
-export const MemberCard: React.FC<MemberCardProps> = ({
-  member,
-  onUpdateStatus,
-  onEdit,
-  onDelete,
-}) => {
-  const [isEditingNote, setIsEditingNote] = useState(false);
-  const [noteText, setNoteText] = useState(member.statusNote || '');
+const timeAgo = (isoDate: string) => { const minutes = Math.max(0, Math.floor((Date.now() - new Date(isoDate).getTime()) / 60000)); if (minutes < 1) return 'Just now'; if (minutes < 60) return `${minutes}m ago`; const hours = Math.floor(minutes / 60); return hours < 24 ? `${hours}h ago` : `${Math.floor(hours / 24)}d ago`; };
 
+export const MemberCard: React.FC<MemberCardProps> = ({ member, onUpdateStatus, onEdit, onDelete }) => {
+  const [editingNote, setEditingNote] = useState(false);
+  const [note, setNote] = useState(member.statusNote || '');
   const config = STATUS_CONFIG[member.status];
+  const saveNote = () => { onUpdateStatus(member.id, member.status, note); setEditingNote(false); };
+  const remove = () => { if (window.confirm(`Remove ${member.name} from the directory?`)) onDelete(member.id); };
 
-  const handleSaveNote = () => {
-    onUpdateStatus(member.id, member.status, noteText);
-    setIsEditingNote(false);
-  };
-
-  const timeAgo = (isoDate: string) => {
-    try {
-      const diffMinutes = Math.floor((Date.now() - new Date(isoDate).getTime()) / 60000);
-      if (diffMinutes < 1) return 'Just now';
-      if (diffMinutes < 60) return `${diffMinutes}m ago`;
-      const diffHours = Math.floor(diffMinutes / 60);
-      if (diffHours < 24) return `${diffHours}h ago`;
-      return `${Math.floor(diffHours / 24)}d ago`;
-    } catch {
-      return '';
-    }
-  };
-
-  return (
-    <div
-      className={`rounded-xl border transition-all p-3.5 flex flex-col justify-between bg-white shadow-sm hover:shadow-md ${
-        member.status === 'present'
-          ? 'border-emerald-200 hover:border-emerald-300'
-          : member.status === 'meeting'
-          ? 'border-amber-200 hover:border-amber-300'
-          : member.status === 'wfh'
-          ? 'border-sky-200 hover:border-sky-300'
-          : member.status === 'away'
-          ? 'border-purple-200 hover:border-purple-300'
-          : 'border-rose-200 hover:border-rose-300'
-      }`}
-    >
-      <div>
-        {/* Top: Compact Avatar, Name, Department, Actions */}
-        <div className="flex items-start justify-between gap-2.5">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="relative flex-shrink-0">
-              {member.avatarUrl ? (
-                <img
-                  src={member.avatarUrl}
-                  alt=""
-                  className="w-10 h-10 rounded-lg object-cover bg-slate-100 border border-slate-200"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-700">
-                  {member.name.charAt(0)}
-                </div>
-              )}
-              <span
-                className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${config.dotClass}`}
-                aria-hidden="true"
-              />
-            </div>
-
-            <div className="min-w-0">
-              <h3 className="font-semibold text-slate-900 text-sm leading-tight truncate">
-                {member.name}
-              </h3>
-              <p className="text-[11px] text-slate-500 truncate leading-snug">{member.role}</p>
-              <span className="inline-block text-[9px] font-semibold uppercase tracking-wider text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded mt-0.5 border border-slate-200">
-                {member.department}
-              </span>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="flex items-center gap-0.5 flex-shrink-0">
-            <button
-              onClick={() => onEdit(member)}
-              aria-label={`Edit ${member.name}`}
-              title="Edit Member"
-              className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer"
-            >
-              <Edit2 className="w-3.5 h-3.5" aria-hidden="true" />
-            </button>
-            <button
-              onClick={() => onDelete(member.id)}
-              aria-label={`Delete ${member.name}`}
-              title="Remove Member"
-              className="p-1 rounded hover:bg-rose-50 text-slate-400 hover:text-rose-600 cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-
-        {/* Current status display & last update */}
-        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-          <StatusBadge status={member.status} />
-          <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
-            <Clock className="w-3 h-3" aria-hidden="true" />
-            {timeAgo(member.updatedAt)}
-          </span>
-        </div>
-
-        {/* 1-Click Status Bar */}
-        <div className="mt-2 grid grid-cols-5 gap-1 bg-slate-50 p-1 rounded-lg border border-slate-200">
-          {(['present', 'wfh', 'meeting', 'away', 'leave'] as PresenceStatus[]).map((st) => {
-            const cfg = STATUS_CONFIG[st];
-            const isSelected = member.status === st;
-            return (
-              <button
-                key={st}
-                onClick={() => onUpdateStatus(member.id, st)}
-                title={cfg.label}
-                className={`py-1 rounded text-[9px] font-bold flex flex-col items-center justify-center transition-colors cursor-pointer ${
-                  isSelected
-                    ? `${cfg.bgClass} ${cfg.textClass} border ${cfg.borderClass} shadow-xs font-bold`
-                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/60'
-                }`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full mb-0.5 ${cfg.dotClass}`} aria-hidden="true" />
-                <span className="truncate max-w-[36px]">{cfg.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Note / Activity text */}
-        <div className="mt-2.5">
-          {isEditingNote ? (
-            <div className="flex items-center gap-1">
-              <input
-                type="text"
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                placeholder="Status note (e.g. Back at 2 PM)"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveNote();
-                  if (e.key === 'Escape') setIsEditingNote(false);
-                }}
-                className="w-full bg-slate-50 text-xs text-slate-900 border border-slate-300 rounded px-2 py-0.5 focus:outline-none focus:border-blue-500"
-              />
-              <button
-                onClick={handleSaveNote}
-                aria-label="Save note"
-                className="p-1 bg-blue-600 hover:bg-blue-700 text-white rounded cursor-pointer"
-              >
-                <Check className="w-3 h-3" aria-hidden="true" />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => {
-                setNoteText(member.statusNote || '');
-                setIsEditingNote(true);
-              }}
-              className="w-full text-left flex items-start gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors py-0.5 cursor-pointer"
-            >
-              <MessageSquare className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-slate-400" aria-hidden="true" />
-              <span className="truncate">
-                {member.statusNote || 'Add note...'}
-              </span>
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  return <article className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 border-b border-stone-200 px-5 py-5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_150px_110px]">
+    <div className="min-w-0"><div className="flex items-center gap-3"><div className="relative shrink-0">{member.avatarUrl ? <img src={member.avatarUrl} alt="" className="h-11 w-11 rounded-full border border-stone-200 bg-stone-100 object-cover" onError={(event) => { event.currentTarget.style.display = 'none'; }} /> : <div className="grid h-11 w-11 place-items-center rounded-full bg-stone-200 font-serif text-lg text-stone-700">{member.name.charAt(0)}</div>}<span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#fbfaf7] ${config.dotClass}`} /></div><div className="min-w-0"><h3 className="truncate font-serif text-xl leading-tight text-stone-950">{member.name}</h3><p className="mt-0.5 truncate text-sm text-stone-500">{member.role} <span className="text-stone-300">/</span> {member.department}</p></div></div>{editingNote ? <div className="mt-3 flex gap-2"><input autoFocus value={note} onChange={(event) => setNote(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') saveNote(); if (event.key === 'Escape') setEditingNote(false); }} placeholder="Add availability context" className="min-w-0 flex-1 rounded-md border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10" /><button onClick={saveNote} aria-label="Save note" className="grid h-9 w-9 place-items-center rounded-md bg-stone-900 text-white"><Check className="h-4 w-4" /></button></div> : <button onClick={() => { setNote(member.statusNote || ''); setEditingNote(true); }} className="mt-2 flex max-w-full items-center gap-1.5 text-left text-sm text-stone-500 transition hover:text-stone-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"><MessageSquare className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{member.statusNote || 'Add availability context'}</span></button>}</div>
+    <div className="hidden sm:block"><StatusBadge status={member.status} /><label className="sr-only" htmlFor={`status-${member.id}`}>Update status for {member.name}</label><select id={`status-${member.id}`} value={member.status} onChange={(event) => onUpdateStatus(member.id, event.target.value as PresenceStatus)} className="mt-2 w-full cursor-pointer rounded-md border border-stone-300 bg-white px-2 py-1.5 text-xs font-semibold text-stone-700 outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10">{(Object.keys(STATUS_CONFIG) as PresenceStatus[]).map((status) => <option key={status} value={status}>{STATUS_CONFIG[status].label}</option>)}</select></div>
+    <div className="flex items-center justify-end gap-1.5"><span className="hidden items-center gap-1 font-mono text-[11px] text-stone-400 md:flex"><Clock className="h-3 w-3" />{timeAgo(member.updatedAt)}</span><button onClick={() => onEdit(member)} aria-label={`Edit ${member.name}`} className="grid h-9 w-9 place-items-center rounded-full text-stone-500 transition hover:bg-stone-200 hover:text-stone-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"><Edit2 className="h-4 w-4" /></button><button onClick={remove} aria-label={`Remove ${member.name}`} className="grid h-9 w-9 place-items-center rounded-full text-stone-400 transition hover:bg-rose-50 hover:text-rose-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"><Trash2 className="h-4 w-4" /></button></div>
+  </article>;
 };

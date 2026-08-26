@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TeamMember, PresenceStatus, DEPARTMENTS } from '../types';
 import { X, UserPlus, Save } from 'lucide-react';
 
@@ -23,6 +23,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   const [avatarUrl, setAvatarUrl] = useState('');
   const [status, setStatus] = useState<PresenceStatus>('present');
   const [statusNote, setStatusNote] = useState('');
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editingMember) {
@@ -41,6 +42,16 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       setStatusNote('');
     }
   }, [editingMember, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    window.setTimeout(() => nameInputRef.current?.focus(), 0);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -73,12 +84,12 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   const depts = DEPARTMENTS.filter((d) => d !== 'All');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-xl p-6 relative">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-          <div className="flex items-center gap-2 text-slate-900 font-semibold text-base">
-            <UserPlus className="w-4 h-4 text-blue-600" aria-hidden="true" />
-            <span>{editingMember ? 'Edit Teammate' : 'Add Team Member'}</span>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/45 p-4">
+      <div role="dialog" aria-modal="true" aria-labelledby="member-dialog-title" className="relative w-full max-w-md rounded-2xl border border-stone-300 bg-[#fbfaf7] p-6 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-stone-200 pb-4">
+          <div className="flex items-center gap-2 font-serif text-xl text-stone-950">
+            <UserPlus className="h-4 w-4 text-stone-600" aria-hidden="true" />
+            <h2 id="member-dialog-title">{editingMember ? 'Edit teammate' : 'Add team member'}</h2>
           </div>
           <button
             onClick={onClose}
@@ -96,12 +107,13 @@ export const MemberModal: React.FC<MemberModalProps> = ({
             </label>
             <input
               id="member-name"
+              ref={nameInputRef}
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Maya Lin"
-              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+              className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10"
             />
           </div>
 
@@ -116,7 +128,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
               value={role}
               onChange={(e) => setRole(e.target.value)}
               placeholder="e.g. Senior Backend Engineer"
-              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+              className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10"
             />
           </div>
 
@@ -168,7 +180,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
               value={avatarUrl}
               onChange={(e) => setAvatarUrl(e.target.value)}
               placeholder="https://images.unsplash.com/..."
-              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+              className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10"
             />
           </div>
 
@@ -182,7 +194,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
               value={statusNote}
               onChange={(e) => setStatusNote(e.target.value)}
               placeholder="e.g. Desk 3B • Back after 2 PM"
-              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+              className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10"
             />
           </div>
 

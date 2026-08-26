@@ -1,165 +1,101 @@
-import { useState, useMemo } from 'react';
-import { useTeamPresence } from './hooks/useTeamPresence';
-import { PresenceStatus, TeamMember } from './types';
+import { useMemo, useState } from 'react';
+import { RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
 import { Header } from './components/Header';
 import { StatsBar } from './components/StatsBar';
 import { DepartmentTabs } from './components/DepartmentTabs';
 import { MemberCard } from './components/MemberCard';
 import { MemberModal } from './components/MemberModal';
-import { Search, RotateCcw } from 'lucide-react';
+import { useTeamPresence } from './hooks/useTeamPresence';
+import { PresenceStatus, TeamMember } from './types';
 
 export function App() {
-  const {
-    members,
-    updateMemberStatus,
-    addMember,
-    editMember,
-    removeMember,
-    resetToDefault,
-  } = useTeamPresence();
-
+  const { members, updateMemberStatus, addMember, editMember, removeMember, resetToDefault } = useTeamPresence();
   const [activeStatusFilter, setActiveStatusFilter] = useState<PresenceStatus | 'all'>('all');
-  const [activeDept, setActiveDept] = useState<string>('All');
+  const [activeDept, setActiveDept] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<PresenceStatus, number> = {
-      present: 0,
-      wfh: 0,
-      meeting: 0,
-      away: 0,
-      leave: 0,
-    };
-    members.forEach((m) => {
-      if (counts[m.status] !== undefined) {
-        counts[m.status]++;
-      }
-    });
+    const counts: Record<PresenceStatus, number> = { present: 0, wfh: 0, meeting: 0, away: 0, leave: 0 };
+    members.forEach((member) => counts[member.status]++);
     return counts;
   }, [members]);
 
   const departmentCounts = useMemo(() => {
     const counts: Record<string, number> = { All: members.length };
-    members.forEach((m) => {
-      counts[m.department] = (counts[m.department] || 0) + 1;
-    });
+    members.forEach((member) => { counts[member.department] = (counts[member.department] || 0) + 1; });
     return counts;
   }, [members]);
 
-  const filteredMembers = useMemo(() => {
-    return members.filter((member) => {
-      const matchStatus =
-        activeStatusFilter === 'all' || member.status === activeStatusFilter;
-      const matchDept = activeDept === 'All' || member.department === activeDept;
-      const matchSearch =
-        member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (member.statusNote &&
-          member.statusNote.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredMembers = useMemo(() => members.filter((member) => {
+    const query = searchQuery.toLowerCase();
+    return (activeStatusFilter === 'all' || member.status === activeStatusFilter)
+      && (activeDept === 'All' || member.department === activeDept)
+      && (!query || member.name.toLowerCase().includes(query) || member.role.toLowerCase().includes(query) || member.statusNote?.toLowerCase().includes(query));
+  }), [members, activeStatusFilter, activeDept, searchQuery]);
 
-      return matchStatus && matchDept && matchSearch;
-    });
-  }, [members, activeStatusFilter, activeDept, searchQuery]);
-
-  const handleOpenAddModal = () => {
-    setEditingMember(null);
-    setIsModalOpen(true);
+  const clearFilters = () => {
+    setActiveStatusFilter('all');
+    setActiveDept('All');
+    setSearchQuery('');
   };
 
-  const handleOpenEditModal = (member: TeamMember) => {
-    setEditingMember(member);
-    setIsModalOpen(true);
-  };
+  const openAddModal = () => { setEditingMember(null); setIsModalOpen(true); };
+  const openEditModal = (member: TeamMember) => { setEditingMember(member); setIsModalOpen(true); };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans antialiased">
-      <Header onAddMember={handleOpenAddModal} totalMembers={members.length} />
-
-      <main className="flex-1 max-w-[1700px] w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-4">
-        {/* Presence Summary */}
-        <section aria-label="Presence Summary">
-          <StatsBar
-            statusCounts={statusCounts}
-            total={members.length}
-            activeFilter={activeStatusFilter}
-            onFilterChange={setActiveStatusFilter}
-          />
-        </section>
-
-        {/* Filter Controls & Search */}
-        <section className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
-          <DepartmentTabs
-            activeDept={activeDept}
-            onSelectDept={setActiveDept}
-            departmentCounts={departmentCounts}
-          />
-
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1 md:w-64">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
-              <input
-                type="text"
-                placeholder="Search member or note..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
-              />
-            </div>
-
-            <button
-              onClick={resetToDefault}
-              aria-label="Reset to default team"
-              title="Reset to default team"
-              className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer shadow-xs"
-            >
-              <RotateCcw className="w-4 h-4" aria-hidden="true" />
-            </button>
+    <div className="min-h-screen bg-[#f5f2eb] text-stone-900 antialiased">
+      <Header onAddMember={openAddModal} totalMembers={members.length} />
+      <main className="mx-auto w-full max-w-[1480px] px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
+        <div className="mb-8 flex flex-col gap-4 border-b border-stone-300 pb-7 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-stone-500">People operations</p>
+            <h2 className="font-serif text-4xl tracking-tight text-stone-950 sm:text-5xl">Team directory</h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">Update availability, keep context close, and see the shape of your team at a glance.</p>
           </div>
-        </section>
+          <p className="font-mono text-xs text-stone-500">{filteredMembers.length} of {members.length} people shown</p>
+        </div>
 
-        {/* Team Members Grid */}
-        <section aria-label="Team Roster">
-          {filteredMembers.length === 0 ? (
-            <div className="text-center py-16 border border-dashed border-slate-200 rounded-xl bg-white/60">
-              <p className="text-slate-500 text-sm font-medium">
-                No team members match the current filter.
-              </p>
-              <button
-                onClick={() => {
-                  setActiveStatusFilter('all');
-                  setActiveDept('All');
-                  setSearchQuery('');
-                }}
-                className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium underline underline-offset-4 cursor-pointer"
-              >
-                Clear filters
-              </button>
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <section aria-label="Team roster" className="min-w-0">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <label className="relative block w-full sm:max-w-sm">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden="true" />
+                <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search people, roles, or notes" className="w-full rounded-full border border-stone-300 bg-[#fbfaf7] py-3 pl-11 pr-4 text-sm text-stone-900 placeholder:text-stone-400 outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10" />
+              </label>
+              {(activeStatusFilter !== 'all' || activeDept !== 'All' || searchQuery) && <button onClick={clearFilters} className="self-start text-sm font-semibold text-stone-600 underline decoration-stone-400 underline-offset-4 transition hover:text-stone-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-stone-900 sm:self-auto">Clear filters</button>}
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
-              {filteredMembers.map((member) => (
-                <MemberCard
-                  key={member.id}
-                  member={member}
-                  onUpdateStatus={updateMemberStatus}
-                  onEdit={handleOpenEditModal}
-                  onDelete={removeMember}
-                />
-              ))}
-            </div>
-          )}
-        </section>
+
+            {filteredMembers.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-stone-300 bg-[#fbfaf7] px-6 py-20 text-center">
+                <p className="font-serif text-2xl text-stone-900">No people found</p>
+                <p className="mt-2 text-sm text-stone-500">Try clearing or changing the current filters.</p>
+                <button onClick={clearFilters} className="mt-5 text-sm font-bold text-stone-900 underline underline-offset-4">Clear all filters</button>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-2xl border border-stone-300 bg-[#fbfaf7] shadow-[0_12px_32px_rgba(65,55,40,0.06)]">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] border-b border-stone-200 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500 sm:grid-cols-[minmax(0,1fr)_150px_110px]">
+                  <span>Person</span><span className="hidden sm:block">Availability</span><span className="text-right">Actions</span>
+                </div>
+                <div>{filteredMembers.map((member) => <MemberCard key={member.id} member={member} onUpdateStatus={updateMemberStatus} onEdit={openEditModal} onDelete={removeMember} />)}</div>
+              </div>
+            )}
+          </section>
+
+          <aside aria-label="Directory controls" className="space-y-5 lg:sticky lg:top-24">
+            <StatsBar statusCounts={statusCounts} total={members.length} activeFilter={activeStatusFilter} onFilterChange={setActiveStatusFilter} />
+            <section className="rounded-2xl border border-stone-300 bg-[#fbfaf7] p-5 shadow-[0_12px_32px_rgba(65,55,40,0.06)]">
+              <div className="mb-4 flex items-center gap-2"><SlidersHorizontal className="h-4 w-4 text-stone-500" aria-hidden="true" /><h3 className="font-serif text-xl text-stone-950">Filter by team</h3></div>
+              <DepartmentTabs activeDept={activeDept} onSelectDept={setActiveDept} departmentCounts={departmentCounts} />
+              <div className="mt-5 border-t border-stone-200 pt-4">
+                <button onClick={() => { if (window.confirm('Reset the directory to the default team? This removes local changes.')) resetToDefault(); }} className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-stone-500 transition hover:text-rose-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-stone-900"><RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />Reset demo data</button>
+              </div>
+            </section>
+          </aside>
+        </div>
       </main>
-
-      <MemberModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={addMember}
-        onUpdate={editMember}
-        editingMember={editingMember}
-      />
+      <MemberModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={addMember} onUpdate={editMember} editingMember={editingMember} />
     </div>
   );
 }

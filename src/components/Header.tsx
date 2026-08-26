@@ -1,100 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Maximize2, Minimize2, Plus, Users } from 'lucide-react';
 
-interface HeaderProps {
-  onAddMember: () => void;
-  totalMembers: number;
-}
+interface HeaderProps { onAddMember: () => void; totalMembers: number; }
 
 export const Header: React.FC<HeaderProps> = ({ onAddMember, totalMembers }) => {
-  const [time, setTime] = useState<Date>(new Date());
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [time, setTime] = useState(new Date());
+  const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
 
   useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    const timer = window.setInterval(() => setTime(new Date()), 1000);
+    const syncFullscreen = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', syncFullscreen);
+    return () => { window.clearInterval(timer); document.removeEventListener('fullscreenchange', syncFullscreen); };
   }, []);
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-      setIsFullscreen(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    }
+  const toggleFullscreen = async () => {
+    try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); } catch { /* Browser denied fullscreen. */ }
   };
 
-  const formattedTime = time.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
-
-  const formattedDate = time.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-
-  return (
-    <header className="border-b border-slate-200 bg-white/95 backdrop-blur-sm sticky top-0 z-40 px-6 py-3.5 shadow-sm">
-      <div className="max-w-[1700px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-        
-        {/* Branding */}
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm">
-            <Users className="w-4 h-4" aria-hidden="true" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold tracking-tight text-slate-900">
-              Team Presence
-            </h1>
-            <p className="text-xs text-slate-500 font-medium">
-              {totalMembers} team members registered
-            </p>
-          </div>
-        </div>
-
-        {/* Digital Clock */}
-        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-1.5 rounded-lg shadow-inner">
-          <span className="text-xl font-mono font-bold tracking-widest text-slate-800">
-            {formattedTime}
-          </span>
-          <span className="text-xs text-slate-500 font-medium border-l border-slate-200 pl-3">
-            {formattedDate}
-          </span>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2.5 w-full md:w-auto justify-end">
-          <button
-            onClick={onAddMember}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-3.5 py-2 rounded-lg transition-colors cursor-pointer shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" aria-hidden="true" />
-            <span>Add Member</span>
-          </button>
-
-          <button
-            onClick={toggleFullscreen}
-            aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter TV Fullscreen'}
-            title={isFullscreen ? 'Exit Fullscreen' : 'Enter TV Fullscreen'}
-            className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer shadow-sm"
-          >
-            {isFullscreen ? (
-              <Minimize2 className="w-4 h-4" aria-hidden="true" />
-            ) : (
-              <Maximize2 className="w-4 h-4" aria-hidden="true" />
-            )}
-          </button>
-        </div>
-
-      </div>
-    </header>
-  );
+  return <header className="sticky top-0 z-40 border-b border-stone-300/90 bg-[#f5f2eb]/95 px-4 backdrop-blur sm:px-6 lg:px-10">
+    <div className="mx-auto flex min-h-[72px] max-w-[1480px] items-center justify-between gap-4">
+      <div className="flex min-w-0 items-center gap-3"><div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-stone-900 text-[#f5f2eb]"><Users className="h-4 w-4" aria-hidden="true" /></div><div><h1 className="font-serif text-xl leading-none text-stone-950">Team presence</h1><p className="mt-1 text-[11px] font-bold uppercase tracking-[0.15em] text-stone-500">{totalMembers} registered</p></div></div>
+      <div className="flex items-center gap-2 sm:gap-4"><div className="hidden text-right sm:block"><p className="font-mono text-sm font-bold tabular-nums text-stone-900">{time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</p><p className="text-[11px] text-stone-500">{time.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p></div><button onClick={onAddMember} className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-stone-900"><Plus className="h-4 w-4" aria-hidden="true" />Add person</button><button onClick={toggleFullscreen} aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'} className="grid h-10 w-10 place-items-center rounded-full border border-stone-300 text-stone-600 transition hover:border-stone-900 hover:text-stone-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-stone-900">{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}</button></div>
+    </div>
+  </header>;
 };
