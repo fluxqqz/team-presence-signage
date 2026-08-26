@@ -5,15 +5,29 @@ import { StatsBar } from './components/StatsBar';
 import { DepartmentTabs } from './components/DepartmentTabs';
 import { MemberCard } from './components/MemberCard';
 import { MemberModal } from './components/MemberModal';
+import { PinLockScreen } from './components/PinLockScreen';
+import { ChangePinModal } from './components/ChangePinModal';
 import { useTeamPresence } from './hooks/useTeamPresence';
+import { useAdminAuth } from './hooks/useAdminAuth';
 import { PresenceStatus, TeamMember } from './types';
 
 export function App() {
+  const {
+    isAuthenticated,
+    isLoading: isAuthLoading,
+    error: authError,
+    login,
+    logout,
+    changePin,
+    setError: setAuthError,
+  } = useAdminAuth();
+
   const { members, isLoading, error, updateMemberStatus, addMember, editMember, removeMember } = useTeamPresence();
   const [activeStatusFilter, setActiveStatusFilter] = useState<PresenceStatus | 'all'>('all');
   const [activeDept, setActiveDept] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isChangePinOpen, setIsChangePinOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
 
   const statusCounts = useMemo(() => {
@@ -44,9 +58,25 @@ export function App() {
   const openAddModal = () => { setEditingMember(null); setIsModalOpen(true); };
   const openEditModal = (member: TeamMember) => { setEditingMember(member); setIsModalOpen(true); };
 
+  if (!isAuthenticated) {
+    return (
+      <PinLockScreen
+        onUnlock={login}
+        isLoading={isAuthLoading}
+        errorMessage={authError}
+        onClearError={() => setAuthError(null)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f5f2eb] text-stone-900 antialiased">
-      <Header onAddMember={openAddModal} totalMembers={members.length} />
+      <Header
+        onAddMember={openAddModal}
+        totalMembers={members.length}
+        onChangePin={() => setIsChangePinOpen(true)}
+        onLock={logout}
+      />
       <main className="mx-auto w-full max-w-[1480px] px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
         <div className="mb-8 flex flex-col gap-4 border-b border-stone-300 pb-7 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -102,6 +132,7 @@ export function App() {
         </div>
       </main>
       <MemberModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={addMember} onUpdate={editMember} editingMember={editingMember} />
+      <ChangePinModal isOpen={isChangePinOpen} onClose={() => setIsChangePinOpen(false)} onChangePin={changePin} />
     </div>
   );
 }

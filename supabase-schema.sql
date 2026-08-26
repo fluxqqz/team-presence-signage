@@ -52,3 +52,29 @@ on public.team_members for delete
 using (true);
 
 alter publication supabase_realtime add table public.team_members;
+
+-- App settings table for PIN and general config
+create table if not exists public.app_settings (
+  key text primary key,
+  value text not null,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.app_settings (key, value)
+values ('admin_pin', '1234')
+on conflict (key) do nothing;
+
+alter table public.app_settings enable row level security;
+
+create policy "Public read app settings"
+on public.app_settings for select
+using (true);
+
+create policy "Public insert app settings"
+on public.app_settings for insert
+with check (true);
+
+create policy "Public update app settings"
+on public.app_settings for update
+using (true)
+with check (true);
