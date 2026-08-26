@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
+import { Search, SlidersHorizontal } from 'lucide-react';
 import { Header } from './components/Header';
 import { StatsBar } from './components/StatsBar';
 import { DepartmentTabs } from './components/DepartmentTabs';
@@ -9,7 +9,7 @@ import { useTeamPresence } from './hooks/useTeamPresence';
 import { PresenceStatus, TeamMember } from './types';
 
 export function App() {
-  const { members, updateMemberStatus, addMember, editMember, removeMember, resetToDefault } = useTeamPresence();
+  const { members, isLoading, error, updateMemberStatus, addMember, editMember, removeMember } = useTeamPresence();
   const [activeStatusFilter, setActiveStatusFilter] = useState<PresenceStatus | 'all'>('all');
   const [activeDept, setActiveDept] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,7 +67,16 @@ export function App() {
               {(activeStatusFilter !== 'all' || activeDept !== 'All' || searchQuery) && <button onClick={clearFilters} className="self-start text-sm font-semibold text-stone-600 underline decoration-stone-400 underline-offset-4 transition hover:text-stone-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-stone-900 sm:self-auto">Clear filters</button>}
             </div>
 
-            {filteredMembers.length === 0 ? (
+            {isLoading ? (
+              <div className="rounded-2xl border border-stone-300 bg-[#fbfaf7] px-6 py-20 text-center">
+                <p className="font-serif text-2xl text-stone-900">Loading directory</p>
+              </div>
+            ) : error ? (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-8 text-center">
+                <p className="font-serif text-xl text-rose-900">Could not load the directory</p>
+                <p className="mt-2 text-sm text-rose-700">{error}</p>
+              </div>
+            ) : filteredMembers.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-stone-300 bg-[#fbfaf7] px-6 py-20 text-center">
                 <p className="font-serif text-2xl text-stone-900">No people found</p>
                 <p className="mt-2 text-sm text-stone-500">Try clearing or changing the current filters.</p>
@@ -88,9 +97,6 @@ export function App() {
             <section className="rounded-2xl border border-stone-300 bg-[#fbfaf7] p-5 shadow-[0_12px_32px_rgba(65,55,40,0.06)]">
               <div className="mb-4 flex items-center gap-2"><SlidersHorizontal className="h-4 w-4 text-stone-500" aria-hidden="true" /><h3 className="font-serif text-xl text-stone-950">Filter by team</h3></div>
               <DepartmentTabs activeDept={activeDept} onSelectDept={setActiveDept} departmentCounts={departmentCounts} />
-              <div className="mt-5 border-t border-stone-200 pt-4">
-                <button onClick={() => { if (window.confirm('Reset the directory to the default team? This removes local changes.')) resetToDefault(); }} className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-stone-500 transition hover:text-rose-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-stone-900"><RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />Reset demo data</button>
-              </div>
             </section>
           </aside>
         </div>
