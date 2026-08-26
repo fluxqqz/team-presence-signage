@@ -83,7 +83,7 @@ export function App() {
                 <button onClick={clearFilters} className="mt-5 text-sm font-bold text-stone-900 underline underline-offset-4">Clear all filters</button>
               </div>
             ) : (
-              <div className="overflow-hidden rounded-2xl border border-stone-300 bg-[#fbfaf7] shadow-[0_12px_32px_rgba(65,55,40,0.06)]">
+              <div className="rounded-2xl border border-stone-300 bg-[#fbfaf7] shadow-[0_12px_32px_rgba(65,55,40,0.06)]">
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] border-b border-stone-200 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.16em] text-stone-500 sm:grid-cols-[minmax(0,1fr)_150px_110px]">
                   <span>Person</span><span className="hidden sm:block">Availability</span><span className="text-right">Actions</span>
                 </div>
