@@ -1,81 +1,185 @@
-create type public.presence_status as enum (
-  'hadir',
-  'sakit',
-  'izin_terlambat',
-  'cuti',
-  'lapangan',
-  'wfh'
-);
+-- =========================================================
+-- PRESENCE STATUS ENUM
+-- =========================================================
 
-create table public.team_members (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  role text not null,
-  department text not null,
-  avatar_url text,
-  status public.presence_status not null default 'hadir',
-  status_note text,
-  updated_at timestamptz not null default now()
-);
-
-create or replace function public.set_team_members_updated_at()
-returns trigger
-language plpgsql
-as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'presence_status'
+      AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE public.presence_status AS ENUM (
+      'hadir',
+      'sakit',
+      'izin_terlambat',
+      'cuti',
+      'lapangan',
+      'wfh'
+    );
+  END IF;
+END
 $$;
 
-create trigger team_members_updated_at
-before update on public.team_members
-for each row execute function public.set_team_members_updated_at();
 
-alter table public.team_members enable row level security;
+-- =========================================================
+-- TEAM MEMBERS TABLE
+-- =========================================================
 
--- ponytail: open policies make local integration testing easy; replace with auth policies before production.
-create policy "Public read team members"
-on public.team_members for select
-using (true);
-
-create policy "Public insert team members"
-on public.team_members for insert
-with check (true);
-
-create policy "Public update team members"
-on public.team_members for update
-using (true)
-with check (true);
-
-create policy "Public delete team members"
-on public.team_members for delete
-using (true);
-
-alter publication supabase_realtime add table public.team_members;
-
--- App settings table for PIN and general config
-create table if not exists public.app_settings (
-  key text primary key,
-  value text not null,
-  updated_at timestamptz not null default now()
+CREATE TABLE IF NOT EXISTS public.team_members (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  role text NOT NULL,
+  department text NOT NULL,
+  avatar_url text,
+  status public.presence_status NOT NULL DEFAULT 'hadir',
+  status_note text,
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-insert into public.app_settings (key, value)
-values ('admin_pin', '1234')
-on conflict (key) do nothing;
 
-alter table public.app_settings enable row level security;
+-- =========================================================
+-- UPDATED_AT FUNCTION
+-- =========================================================
 
-create policy "Public read app settings"
-on public.app_settings for select
-using (true);
+CREATE OR REPLACE FUNCTION public.set_team_members_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
 
-create policy "Public insert app settings"
-on public.app_settings for insert
-with check (true);
 
-create policy "Public update app settings"
-on public.app_settings for update
-using (true)
-with check (true);
+-- =========================================================
+-- UPDATED_AT TRIGGER
+-- =========================================================
+
+DROP TRIGGER IF EXISTS team_members_updated_at
+ON public.team_members;
+
+CREATE TRIGGER team_members_updated_at
+BEFORE UPDATE ON public.team_members
+FOR EACH ROW
+EXECUTE FUNCTION public.set_team_members_updated_at();
+
+
+-- =========================================================
+-- TEAM MEMBERS RLS
+-- =========================================================
+
+ALTER TABLE public.team_members ENABLE ROW LEVEL SECURITY;
+
+
+-- Remove existing policies first
+DROP POLICY IF EXISTS "Public read team members"
+ON public.team_members;
+
+DROP POLICY IF EXISTS "Public insert team members"
+ON public.team_members;
+
+DROP POLICY IF EXISTS "Public update team members"
+ON public.team_members;
+
+DROP POLICY IF EXISTS "Public delete team members"
+ON public.team_members;
+
+
+-- Recreate policies
+CREATE POLICY "Public read team members"
+ON public.team_members
+FOR SELECT
+USING (true);
+
+CREATE POLICY "Public insert team members"
+ON public.team_members
+FOR INSERT
+WITH CHECK (true);
+
+CREATE POLICY "Public update team members"
+ON public.team_members
+FOR UPDATE
+USING (true)
+WITH CHECK (true);
+
+CREATE POLICY "Public delete team members"
+ON public.team_members
+FOR DELETE
+USING (true);
+
+
+-- =========================================================
+-- SUPABASE REALTIME
+-- =========================================================
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename = 'team_members'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime
+    ADD TABLE public.team_members;
+  END IF;
+END
+$$;
+
+
+-- =========================================================
+-- APP SETTINGS TABLE
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS public.app_settings (
+  key text PRIMARY KEY,
+  value text NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+
+-- Default admin PIN
+INSERT INTO public.app_settings (key, value)
+VALUES ('admin_pin', '1234')
+ON CONFLICT (key) DO NOTHING;
+
+
+-- =========================================================
+-- APP SETTINGS RLS
+-- =========================================================
+
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+
+
+-- Remove existing policies first
+DROP POLICY IF EXISTS "Public read app settings"
+ON public.app_settings;
+
+DROP POLICY IF EXISTS "Public insert app settings"
+ON public.app_settings;
+
+DROP POLICY IF EXISTS "Public update app settings"
+ON public.app_settings;
+
+
+-- Recreate policies
+CREATE POLICY "Public read app settings"
+ON public.app_settings
+FOR SELECT
+USING (true);
+
+CREATE POLICY "Public insert app settings"
+ON public.app_settings
+FOR INSERT
+WITH CHECK (true);
+
+CREATE POLICY "Public update app settings"
+ON public.app_settings
+FOR UPDATE
+USING (true)
+WITH CHECK (true);
