@@ -6,12 +6,12 @@ interface MemberCardProps { member: TeamMember; onUpdateStatus: (id: string, sta
 
 const timeAgo = (isoDate: string) => { const minutes = Math.max(0, Math.floor((Date.now() - new Date(isoDate).getTime()) / 60000)); if (minutes < 1) return 'Just now'; if (minutes < 60) return `${minutes}m ago`; const hours = Math.floor(minutes / 60); return hours < 24 ? `${hours}h ago` : `${Math.floor(hours / 24)}d ago`; };
 const statusRing: Record<PresenceStatus, string> = {
-  hadir: 'ring-emerald-500',
-  sakit: 'ring-yellow-500',
-  izin_terlambat: 'ring-orange-500',
-  cuti: 'ring-fuchsia-500',
-  lapangan: 'ring-teal-500',
-  wfh: 'ring-sky-500',
+  hadir: 'ring-[#FFF9FF] ring-offset-1 ring-offset-stone-400',
+  sakit: 'ring-[#FF080B]',
+  izin_terlambat: 'ring-[#FFFB01]',
+  cuti: 'ring-[#F243FF]',
+  lapangan: 'ring-[#0CF2FF]',
+  wfh: 'ring-[#0EFF12]',
 };
 
 export const MemberCard: React.FC<MemberCardProps> = ({ member, onUpdateStatus, onEdit, onDelete }) => {
