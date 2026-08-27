@@ -42,6 +42,11 @@ export function App() {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
+  const deptFilteredMembers = useMemo(() => {
+    if (activeDept === 'All') return members;
+    return members.filter((member) => member.department === activeDept);
+  }, [members, activeDept]);
+
   const statusCounts = useMemo(() => {
     const counts: Record<PresenceStatus, number> = {
       hadir: 0,
@@ -52,9 +57,9 @@ export function App() {
       wfh: 0,
       off: 0,
     };
-    members.forEach((member) => counts[member.status]++);
+    deptFilteredMembers.forEach((member) => counts[member.status]++);
     return counts;
-  }, [members]);
+  }, [deptFilteredMembers]);
 
   const departmentCounts = useMemo(() => {
     const counts: Record<string, number> = { All: members.length };
@@ -185,7 +190,13 @@ export function App() {
           </section>
 
           <aside aria-label="Directory controls" className="space-y-5 lg:sticky lg:top-24">
-            <StatsBar statusCounts={statusCounts} total={members.length} activeFilter={activeStatusFilter} onFilterChange={setActiveStatusFilter} />
+            <StatsBar
+              statusCounts={statusCounts}
+              total={deptFilteredMembers.length}
+              activeFilter={activeStatusFilter}
+              onFilterChange={setActiveStatusFilter}
+              activeDept={activeDept}
+            />
             <section className="rounded-2xl border border-stone-300 bg-[#fbfaf7] p-5 shadow-[0_12px_32px_rgba(65,55,40,0.06)]">
               <div className="mb-4 flex items-center gap-2"><SlidersHorizontal className="h-4 w-4 text-stone-500" aria-hidden="true" /><h3 className="font-serif text-xl text-stone-950">Filter by team</h3></div>
               <DepartmentTabs activeDept={activeDept} onSelectDept={setActiveDept} departmentCounts={departmentCounts} />
