@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { useMemo, useRef, useState, useEffect } from 'react';
+import { ChevronDown, Search, SlidersHorizontal, Users2 } from 'lucide-react';
 import { Header } from './components/Header';
 import { StatsBar } from './components/StatsBar';
 import { DepartmentTabs } from './components/DepartmentTabs';
@@ -9,7 +9,7 @@ import { PinLockScreen } from './components/PinLockScreen';
 import { ChangePinModal } from './components/ChangePinModal';
 import { useTeamPresence } from './hooks/useTeamPresence';
 import { useAdminAuth } from './hooks/useAdminAuth';
-import { PresenceStatus, TeamMember } from './types';
+import { PresenceStatus, STATUS_CONFIG, TeamMember } from './types';
 
 export function App() {
   const {
@@ -22,13 +22,25 @@ export function App() {
     setError: setAuthError,
   } = useAdminAuth();
 
-  const { members, isLoading, error, updateMemberStatus, addMember, editMember, removeMember } = useTeamPresence();
+  const { members, isLoading, error, updateMemberStatus, updateAllStatus, addMember, editMember, removeMember } = useTeamPresence();
   const [activeStatusFilter, setActiveStatusFilter] = useState<PresenceStatus | 'all'>('all');
   const [activeDept, setActiveDept] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isChangePinOpen, setIsChangePinOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [isSetAllOpen, setIsSetAllOpen] = useState(false);
+  const setAllRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (!setAllRef.current?.contains(e.target as Node)) {
+        setIsSetAllOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   const statusCounts = useMemo(() => {
     const counts: Record<PresenceStatus, number> = {
@@ -38,6 +50,7 @@ export function App() {
       cuti: 0,
       lapangan: 0,
       wfh: 0,
+      off: 0,
     };
     members.forEach((member) => counts[member.status]++);
     return counts;
@@ -97,10 +110,52 @@ export function App() {
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
           <section aria-label="Team roster" className="min-w-0">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <label className="relative block w-full sm:max-w-sm">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden="true" />
-                <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search people, roles, or notes" className="w-full rounded-full border border-stone-300 bg-[#fbfaf7] py-3 pl-11 pr-4 text-sm text-stone-900 placeholder:text-stone-400 outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10" />
-              </label>
+              <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+                <label className="relative block w-full sm:max-w-sm">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden="true" />
+                  <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search people, roles, or notes" className="w-full rounded-full border border-stone-300 bg-[#fbfaf7] py-2.5 pl-11 pr-4 text-sm text-stone-900 placeholder:text-stone-400 outline-none transition focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10" />
+                </label>
+
+                {/* Set all status dropdown */}
+                <div className="relative" ref={setAllRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsSetAllOpen((prev) => !prev)}
+                    className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-2.5 text-xs font-bold text-stone-700 shadow-sm transition hover:border-stone-400 hover:text-stone-950 focus:border-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                    aria-expanded={isSetAllOpen}
+                  >
+                    <Users2 className="h-3.5 w-3.5 text-stone-500" />
+                    <span>Set all status</span>
+                    <ChevronDown className="h-3 w-3 text-stone-400" />
+                  </button>
+
+                  {isSetAllOpen && (
+                    <div className="absolute left-0 top-[calc(100%+0.5rem)] z-30 w-52 overflow-hidden rounded-xl border border-stone-200 bg-white py-1.5 shadow-xl animate-in fade-in zoom-in-95">
+                      <div className="border-b border-stone-100 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                        Set all to:
+                      </div>
+                      {(Object.keys(STATUS_CONFIG) as PresenceStatus[]).map((status) => {
+                        const config = STATUS_CONFIG[status];
+                        return (
+                          <button
+                            key={status}
+                            type="button"
+                            onClick={() => {
+                              setIsSetAllOpen(false);
+                              updateAllStatus(status);
+                            }}
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs font-semibold text-stone-800 transition hover:bg-stone-50"
+                          >
+                            <span className={`h-2.5 w-2.5 rounded-full ${config.dotClass}`} />
+                            <span>{config.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {(activeStatusFilter !== 'all' || activeDept !== 'All' || searchQuery) && <button onClick={clearFilters} className="self-start text-sm font-semibold text-stone-600 underline decoration-stone-400 underline-offset-4 transition hover:text-stone-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-stone-900 sm:self-auto">Clear filters</button>}
             </div>
 

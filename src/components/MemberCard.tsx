@@ -12,6 +12,7 @@ const statusRing: Record<PresenceStatus, string> = {
   cuti: 'ring-[#F243FF]',
   lapangan: 'ring-[#0CF2FF]',
   wfh: 'ring-[#0EFF12]',
+  off: 'ring-stone-400',
 };
 
 export const MemberCard: React.FC<MemberCardProps> = ({ member, onUpdateStatus, onEdit, onDelete }) => {

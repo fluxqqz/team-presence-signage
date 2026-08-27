@@ -138,5 +138,25 @@ export function useTeamPresence() {
     if (deleteError) setError(deleteError.message);
   };
 
-  return { members, isLoading, error, updateMemberStatus, addMember, editMember, removeMember };
+  const updateAllStatus = async (status: PresenceStatus) => {
+    if (!supabase) return;
+    const previous = [...members];
+    const updatedAt = new Date().toISOString();
+
+    setMembers((current) => current.map((member) => ({ ...member, status, updatedAt })));
+
+    const { error: updateError } = await supabase
+      .from('team_members')
+      .update({ status })
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (updateError) {
+      setMembers(previous);
+      setError(updateError.message);
+    } else {
+      setError(null);
+    }
+  };
+
+  return { members, isLoading, error, updateMemberStatus, updateAllStatus, addMember, editMember, removeMember };
 }

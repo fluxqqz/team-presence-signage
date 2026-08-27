@@ -167,6 +167,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                 <option value="cuti">Cuti</option>
                 <option value="lapangan">Lapangan</option>
                 <option value="wfh">WFH</option>
+                <option value="off">Off</option>
               </select>
             </div>
           </div>

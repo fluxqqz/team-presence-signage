@@ -4,7 +4,8 @@ export type PresenceStatus =
   | 'izin_terlambat'
   | 'cuti'
   | 'lapangan'
-  | 'wfh';
+  | 'wfh'
+  | 'off';
 
 export interface TeamMember {
   id: string;
@@ -89,6 +90,16 @@ export const STATUS_CONFIG: Record<
     dotClass: 'bg-[#0EFF12]',
     badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     hexColor: '#0EFF12',
+  },
+  off: {
+    label: 'Off',
+    description: 'Off / Tidak aktif',
+    bgClass: 'bg-stone-100',
+    textClass: 'text-stone-500',
+    borderClass: 'border-stone-300',
+    dotClass: 'bg-stone-400',
+    badgeClass: 'bg-stone-100 text-stone-600 border-stone-300',
+    hexColor: '#000000',
   },
 };
 

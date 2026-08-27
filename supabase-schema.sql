@@ -17,8 +17,11 @@ BEGIN
       'izin_terlambat',
       'cuti',
       'lapangan',
-      'wfh'
+      'wfh',
+      'off'
     );
+  ELSE
+    ALTER TYPE public.presence_status ADD VALUE IF NOT EXISTS 'off';
   END IF;
 END
 $$;
