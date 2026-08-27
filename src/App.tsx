@@ -31,7 +31,14 @@ export function App() {
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<PresenceStatus, number> = { present: 0, wfh: 0, meeting: 0, away: 0, leave: 0 };
+    const counts: Record<PresenceStatus, number> = {
+      hadir: 0,
+      sakit: 0,
+      izin_terlambat: 0,
+      cuti: 0,
+      lapangan: 0,
+      wfh: 0,
+    };
     members.forEach((member) => counts[member.status]++);
     return counts;
   }, [members]);

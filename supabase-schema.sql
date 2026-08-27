@@ -1,9 +1,10 @@
 create type public.presence_status as enum (
-  'present',
-  'wfh',
-  'meeting',
-  'away',
-  'leave'
+  'hadir',
+  'sakit',
+  'izin_terlambat',
+  'cuti',
+  'lapangan',
+  'wfh'
 );
 
 create table public.team_members (
@@ -12,7 +13,7 @@ create table public.team_members (
   role text not null,
   department text not null,
   avatar_url text,
-  status public.presence_status not null default 'present',
+  status public.presence_status not null default 'hadir',
   status_note text,
   updated_at timestamptz not null default now()
 );

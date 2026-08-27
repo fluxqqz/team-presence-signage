@@ -5,7 +5,14 @@ import { PresenceStatus, STATUS_CONFIG, TeamMember } from '../types';
 interface MemberCardProps { member: TeamMember; onUpdateStatus: (id: string, status: PresenceStatus, note?: string) => void; onEdit: (member: TeamMember) => void; onDelete: (id: string) => void; }
 
 const timeAgo = (isoDate: string) => { const minutes = Math.max(0, Math.floor((Date.now() - new Date(isoDate).getTime()) / 60000)); if (minutes < 1) return 'Just now'; if (minutes < 60) return `${minutes}m ago`; const hours = Math.floor(minutes / 60); return hours < 24 ? `${hours}h ago` : `${Math.floor(hours / 24)}d ago`; };
-const statusRing: Record<PresenceStatus, string> = { present: 'ring-emerald-500', wfh: 'ring-sky-500', meeting: 'ring-amber-500', away: 'ring-purple-500', leave: 'ring-rose-500' };
+const statusRing: Record<PresenceStatus, string> = {
+  hadir: 'ring-emerald-500',
+  sakit: 'ring-yellow-500',
+  izin_terlambat: 'ring-orange-500',
+  cuti: 'ring-fuchsia-500',
+  lapangan: 'ring-teal-500',
+  wfh: 'ring-sky-500',
+};
 
 export const MemberCard: React.FC<MemberCardProps> = ({ member, onUpdateStatus, onEdit, onDelete }) => {
   const [editingNote, setEditingNote] = useState(false);

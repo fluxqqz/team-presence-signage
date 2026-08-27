@@ -21,7 +21,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   const [role, setRole] = useState('');
   const [department, setDepartment] = useState('Engineering');
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [status, setStatus] = useState<PresenceStatus>('present');
+  const [status, setStatus] = useState<PresenceStatus>('hadir');
   const [statusNote, setStatusNote] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -38,7 +38,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       setRole('');
       setDepartment('Engineering');
       setAvatarUrl('');
-      setStatus('present');
+      setStatus('hadir');
       setStatusNote('');
     }
   }, [editingMember, isOpen]);
@@ -161,11 +161,12 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                 onChange={(e) => setStatus(e.target.value as PresenceStatus)}
                 className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 cursor-pointer"
               >
-                <option value="present">In Office</option>
+                <option value="hadir">Hadir</option>
+                <option value="sakit">Sakit</option>
+                <option value="izin_terlambat">Izin Terlambat</option>
+                <option value="cuti">Cuti</option>
+                <option value="lapangan">Lapangan</option>
                 <option value="wfh">WFH</option>
-                <option value="meeting">In Meeting</option>
-                <option value="away">Away</option>
-                <option value="leave">On Leave</option>
               </select>
             </div>
           </div>
