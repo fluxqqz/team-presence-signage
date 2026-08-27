@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { TeamMember, PresenceStatus, DEPARTMENTS } from '../types';
+import { TeamMember, PresenceStatus, DEPARTMENTS, ROLES } from '../types';
 import { X, UserPlus, Save } from 'lucide-react';
 
 interface MemberModalProps {
@@ -18,7 +18,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   editingMember,
 }) => {
   const [name, setName] = useState('');
-  const [role, setRole] = useState('');
+  const [role, setRole] = useState('Staff');
   const [department, setDepartment] = useState('Engineering');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [status, setStatus] = useState<PresenceStatus>('hadir');
@@ -35,7 +35,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       setStatusNote(editingMember.statusNote || '');
     } else {
       setName('');
-      setRole('');
+      setRole('Staff');
       setDepartment('Engineering');
       setAvatarUrl('');
       setStatus('hadir');
@@ -119,17 +119,20 @@ export const MemberModal: React.FC<MemberModalProps> = ({
 
           <div>
             <label htmlFor="member-role" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-              Role / Title *
+              Role / Level *
             </label>
-            <input
+            <select
               id="member-role"
-              type="text"
-              required
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              placeholder="e.g. Senior Backend Engineer"
-              className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10"
-            />
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 cursor-pointer"
+            >
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

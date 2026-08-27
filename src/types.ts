@@ -111,3 +111,11 @@ export const DEPARTMENTS = [
   'Operations',
   'Marketing',
 ] as const;
+
+export const ROLES = [
+  'Staff',
+  'Lead',
+  'C-level',
+] as const;
+
+export type Role = typeof ROLES[number];
