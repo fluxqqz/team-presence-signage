@@ -1,27 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { AutoScheduleConfig, PresenceStatus } from '../types';
+import { PresenceStatus, ScheduleRule } from '../types';
 
-const SCHEDULE_SETTINGS_KEYS = {
-  enabled: 'auto_schedule_enabled',
-  time: 'auto_schedule_time',
-  status: 'auto_schedule_status',
-  weekdaysOnly: 'auto_schedule_weekdays_only',
-};
+const RULES_KEY = 'auto_schedule_rules';
 
-const DEFAULT_CONFIG: AutoScheduleConfig = {
-  enabled: true,
-  time: '18:00',
-  status: 'off',
-  weekdaysOnly: true,
-};
+const DEFAULT_RULES: ScheduleRule[] = [
+  { id: '1', time: '09:00', status: 'hadir', weekdaysOnly: true, enabled: true },
+  { id: '2', time: '18:00', status: 'off', weekdaysOnly: true, enabled: true },
+];
 
 export function useAutoSchedule(onTriggerReset: (status: PresenceStatus) => Promise<void>) {
-  const [config, setConfig] = useState<AutoScheduleConfig>(DEFAULT_CONFIG);
+  const [rules, setRules] = useState<ScheduleRule[]>(DEFAULT_RULES);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load schedule configuration from database
-  const loadScheduleConfig = useCallback(async () => {
+  // Load rules from database or fallback to default
+  const loadRules = useCallback(async () => {
     if (!supabase) {
       setIsLoading(false);
       return;
@@ -29,69 +22,67 @@ export function useAutoSchedule(onTriggerReset: (status: PresenceStatus) => Prom
 
     const { data, error } = await supabase
       .from('app_settings')
-      .select('key, value')
-      .in('key', Object.values(SCHEDULE_SETTINGS_KEYS));
+      .select('value')
+      .eq('key', RULES_KEY)
+      .maybeSingle();
 
-    if (!error && data) {
-      const map = Object.fromEntries(data.map((row) => [row.key, row.value]));
-      setConfig({
-        enabled: map[SCHEDULE_SETTINGS_KEYS.enabled] !== undefined ? map[SCHEDULE_SETTINGS_KEYS.enabled] === 'true' : DEFAULT_CONFIG.enabled,
-        time: map[SCHEDULE_SETTINGS_KEYS.time] || DEFAULT_CONFIG.time,
-        status: (map[SCHEDULE_SETTINGS_KEYS.status] as PresenceStatus) || DEFAULT_CONFIG.status,
-        weekdaysOnly: map[SCHEDULE_SETTINGS_KEYS.weekdaysOnly] !== undefined ? map[SCHEDULE_SETTINGS_KEYS.weekdaysOnly] === 'true' : DEFAULT_CONFIG.weekdaysOnly,
-      });
+    if (!error && data?.value) {
+      try {
+        const parsed = JSON.parse(data.value) as ScheduleRule[];
+        if (Array.isArray(parsed)) {
+          setRules(parsed);
+        }
+      } catch {
+        setRules(DEFAULT_RULES);
+      }
     }
     setIsLoading(false);
   }, []);
 
   useEffect(() => {
-    void loadScheduleConfig();
-  }, [loadScheduleConfig]);
+    void loadRules();
+  }, [loadRules]);
 
-  // Save updated schedule to Supabase app_settings
-  const saveConfig = async (newConfig: AutoScheduleConfig): Promise<{ success: boolean; error?: string }> => {
-    setConfig(newConfig);
+  // Save rules to Supabase
+  const saveRules = async (newRules: ScheduleRule[]): Promise<{ success: boolean; error?: string }> => {
+    setRules(newRules);
     if (!supabase) return { success: true };
 
-    const updates = [
-      { key: SCHEDULE_SETTINGS_KEYS.enabled, value: String(newConfig.enabled), updated_at: new Date().toISOString() },
-      { key: SCHEDULE_SETTINGS_KEYS.time, value: newConfig.time, updated_at: new Date().toISOString() },
-      { key: SCHEDULE_SETTINGS_KEYS.status, value: newConfig.status, updated_at: new Date().toISOString() },
-      { key: SCHEDULE_SETTINGS_KEYS.weekdaysOnly, value: String(newConfig.weekdaysOnly), updated_at: new Date().toISOString() },
-    ];
+    const { error } = await supabase.from('app_settings').upsert({
+      key: RULES_KEY,
+      value: JSON.stringify(newRules),
+      updated_at: new Date().toISOString(),
+    });
 
-    const { error } = await supabase.from('app_settings').upsert(updates);
     if (error) {
       return { success: false, error: error.message };
     }
     return { success: true };
   };
 
-  // In-app automated trigger loop (runs every 15 seconds)
+  // Automated trigger loop for all active rules
   useEffect(() => {
-    if (!config.enabled) return;
-
     const timer = setInterval(() => {
       const now = new Date();
-      const day = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      const day = now.getDay();
       const isWeekday = day >= 1 && day <= 5;
-
-      if (config.weekdaysOnly && !isWeekday) return;
-
       const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       const todayStr = now.toISOString().slice(0, 10);
 
-      const lastRunKey = `last_auto_schedule_run_${todayStr}`;
-      const alreadyRan = sessionStorage.getItem(lastRunKey);
+      rules.forEach((rule) => {
+        if (!rule.enabled) return;
+        if (rule.weekdaysOnly && !isWeekday) return;
 
-      if (currentTimeStr === config.time && alreadyRan !== 'triggered') {
-        sessionStorage.setItem(lastRunKey, 'triggered');
-        void onTriggerReset(config.status);
-      }
+        const runKey = `schedule_run_${rule.id}_${todayStr}`;
+        if (currentTimeStr === rule.time && !sessionStorage.getItem(runKey)) {
+          sessionStorage.setItem(runKey, 'true');
+          void onTriggerReset(rule.status);
+        }
+      });
     }, 15000);
 
     return () => clearInterval(timer);
-  }, [config, onTriggerReset]);
+  }, [rules, onTriggerReset]);
 
-  return { config, isLoading, saveConfig, reloadConfig: loadScheduleConfig };
+  return { rules, isLoading, saveRules, reloadRules: loadRules };
 }

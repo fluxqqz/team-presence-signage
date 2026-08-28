@@ -25,7 +25,7 @@ export function App() {
   } = useAdminAuth();
 
   const { members, isLoading, error, updateMemberStatus, updateAllStatus, addMember, editMember, removeMember } = useTeamPresence();
-  const { config: scheduleConfig, saveConfig: saveScheduleConfig } = useAutoSchedule(updateAllStatus);
+  const { rules: scheduleRules, saveRules: saveScheduleRules } = useAutoSchedule(updateAllStatus);
 
   const [activeStatusFilter, setActiveStatusFilter] = useState<PresenceStatus | 'all'>('all');
   const [activeDept, setActiveDept] = useState('All');
@@ -211,7 +211,7 @@ export function App() {
         </div>
       </main>
       <MemberModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={addMember} onUpdate={editMember} editingMember={editingMember} />
-      <ScheduleModal isOpen={isScheduleOpen} onClose={() => setIsScheduleOpen(false)} config={scheduleConfig} onSave={saveScheduleConfig} />
+      <ScheduleModal isOpen={isScheduleOpen} onClose={() => setIsScheduleOpen(false)} rules={scheduleRules} onSave={saveScheduleRules} />
       <ChangePinModal isOpen={isChangePinOpen} onClose={() => setIsChangePinOpen(false)} onChangePin={changePin} />
     </div>
   );

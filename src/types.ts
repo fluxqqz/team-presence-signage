@@ -120,9 +120,10 @@ export const ROLES = [
 
 export type Role = typeof ROLES[number];
 
-export interface AutoScheduleConfig {
-  enabled: boolean;
+export interface ScheduleRule {
+  id: string;
   time: string;
   status: PresenceStatus;
   weekdaysOnly: boolean;
+  enabled: boolean;
 }
