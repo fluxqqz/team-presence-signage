@@ -119,3 +119,12 @@ export const ROLES = [
 ] as const;
 
 export type Role = typeof ROLES[number];
+
+export interface AutoScheduleConfig {
+  enabled: boolean;
+  morningTime: string;
+  morningStatus: PresenceStatus;
+  eveningTime: string;
+  eveningStatus: PresenceStatus;
+  weekdaysOnly: boolean;
+}

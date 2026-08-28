@@ -7,8 +7,10 @@ import { MemberCard } from './components/MemberCard';
 import { MemberModal } from './components/MemberModal';
 import { PinLockScreen } from './components/PinLockScreen';
 import { ChangePinModal } from './components/ChangePinModal';
+import { ScheduleModal } from './components/ScheduleModal';
 import { useTeamPresence } from './hooks/useTeamPresence';
 import { useAdminAuth } from './hooks/useAdminAuth';
+import { useAutoSchedule } from './hooks/useAutoSchedule';
 import { PresenceStatus, STATUS_CONFIG, TeamMember } from './types';
 
 export function App() {
@@ -23,11 +25,14 @@ export function App() {
   } = useAdminAuth();
 
   const { members, isLoading, error, updateMemberStatus, updateAllStatus, addMember, editMember, removeMember } = useTeamPresence();
+  const { config: scheduleConfig, saveConfig: saveScheduleConfig } = useAutoSchedule(updateAllStatus);
+
   const [activeStatusFilter, setActiveStatusFilter] = useState<PresenceStatus | 'all'>('all');
   const [activeDept, setActiveDept] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isChangePinOpen, setIsChangePinOpen] = useState(false);
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [isSetAllOpen, setIsSetAllOpen] = useState(false);
   const setAllRef = useRef<HTMLDivElement>(null);
@@ -99,6 +104,7 @@ export function App() {
       <Header
         onAddMember={openAddModal}
         totalMembers={members.length}
+        onOpenSchedule={() => setIsScheduleOpen(true)}
         onChangePin={() => setIsChangePinOpen(true)}
         onLock={logout}
       />
@@ -205,6 +211,7 @@ export function App() {
         </div>
       </main>
       <MemberModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={addMember} onUpdate={editMember} editingMember={editingMember} />
+      <ScheduleModal isOpen={isScheduleOpen} onClose={() => setIsScheduleOpen(false)} config={scheduleConfig} onSave={saveScheduleConfig} />
       <ChangePinModal isOpen={isChangePinOpen} onClose={() => setIsChangePinOpen(false)} onChangePin={changePin} />
     </div>
   );

@@ -146,9 +146,16 @@ CREATE TABLE IF NOT EXISTS public.app_settings (
 );
 
 
--- Default admin PIN
+-- Default admin PIN and Auto-Schedule settings
 INSERT INTO public.app_settings (key, value)
-VALUES ('admin_pin', '1234')
+VALUES 
+  ('admin_pin', '1234'),
+  ('auto_schedule_enabled', 'true'),
+  ('auto_morning_time', '09:00'),
+  ('auto_morning_status', 'hadir'),
+  ('auto_evening_time', '18:00'),
+  ('auto_evening_status', 'off'),
+  ('auto_schedule_weekdays_only', 'true')
 ON CONFLICT (key) DO NOTHING;
 
 

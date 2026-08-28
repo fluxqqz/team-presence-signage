@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { KeyRound, Lock, Maximize2, Minimize2, Plus, Users } from 'lucide-react';
+import { CalendarClock, KeyRound, Lock, Maximize2, Minimize2, Plus, Users } from 'lucide-react';
 
 interface HeaderProps {
   onAddMember: () => void;
   totalMembers: number;
+  onOpenSchedule: () => void;
   onChangePin: () => void;
   onLock: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onAddMember, totalMembers, onChangePin, onLock }) => {
+export const Header: React.FC<HeaderProps> = ({ onAddMember, totalMembers, onOpenSchedule, onChangePin, onLock }) => {
   const [time, setTime] = useState(new Date());
   const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement));
 
@@ -33,6 +34,9 @@ export const Header: React.FC<HeaderProps> = ({ onAddMember, totalMembers, onCha
         </div>
         <button onClick={onAddMember} className="inline-flex items-center gap-1.5 rounded-full bg-stone-900 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-stone-900 sm:px-4 sm:py-2.5 sm:text-sm">
           <Plus className="h-4 w-4" aria-hidden="true" />Add person
+        </button>
+        <button onClick={onOpenSchedule} title="Auto Schedule Settings" aria-label="Auto Schedule Settings" className="grid h-9 w-9 place-items-center rounded-full border border-stone-300 text-stone-600 transition hover:border-stone-900 hover:text-stone-950 sm:h-10 sm:w-10">
+          <CalendarClock className="h-4 w-4" />
         </button>
         <button onClick={onChangePin} title="Change Passcode" aria-label="Change Passcode" className="grid h-9 w-9 place-items-center rounded-full border border-stone-300 text-stone-600 transition hover:border-stone-900 hover:text-stone-950 sm:h-10 sm:w-10">
           <KeyRound className="h-4 w-4" />
