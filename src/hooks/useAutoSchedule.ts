@@ -4,21 +4,15 @@ import { AutoScheduleConfig, PresenceStatus } from '../types';
 
 const SCHEDULE_SETTINGS_KEYS = {
   enabled: 'auto_schedule_enabled',
-  morningTime: 'auto_morning_time',
-  morningStatus: 'auto_morning_status',
-  eveningTime: 'auto_evening_time',
-  eveningStatus: 'auto_evening_status',
+  time: 'auto_schedule_time',
+  status: 'auto_schedule_status',
   weekdaysOnly: 'auto_schedule_weekdays_only',
-  lastRunDate: 'auto_schedule_last_run_date',
-  lastRunSlot: 'auto_schedule_last_run_slot',
 };
 
 const DEFAULT_CONFIG: AutoScheduleConfig = {
   enabled: true,
-  morningTime: '09:00',
-  morningStatus: 'hadir',
-  eveningTime: '18:00',
-  eveningStatus: 'off',
+  time: '18:00',
+  status: 'off',
   weekdaysOnly: true,
 };
 
@@ -26,7 +20,7 @@ export function useAutoSchedule(onTriggerReset: (status: PresenceStatus) => Prom
   const [config, setConfig] = useState<AutoScheduleConfig>(DEFAULT_CONFIG);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load schedule configuration from database or local storage
+  // Load schedule configuration from database
   const loadScheduleConfig = useCallback(async () => {
     if (!supabase) {
       setIsLoading(false);
@@ -42,10 +36,8 @@ export function useAutoSchedule(onTriggerReset: (status: PresenceStatus) => Prom
       const map = Object.fromEntries(data.map((row) => [row.key, row.value]));
       setConfig({
         enabled: map[SCHEDULE_SETTINGS_KEYS.enabled] !== undefined ? map[SCHEDULE_SETTINGS_KEYS.enabled] === 'true' : DEFAULT_CONFIG.enabled,
-        morningTime: map[SCHEDULE_SETTINGS_KEYS.morningTime] || DEFAULT_CONFIG.morningTime,
-        morningStatus: (map[SCHEDULE_SETTINGS_KEYS.morningStatus] as PresenceStatus) || DEFAULT_CONFIG.morningStatus,
-        eveningTime: map[SCHEDULE_SETTINGS_KEYS.eveningTime] || DEFAULT_CONFIG.eveningTime,
-        eveningStatus: (map[SCHEDULE_SETTINGS_KEYS.eveningStatus] as PresenceStatus) || DEFAULT_CONFIG.eveningStatus,
+        time: map[SCHEDULE_SETTINGS_KEYS.time] || DEFAULT_CONFIG.time,
+        status: (map[SCHEDULE_SETTINGS_KEYS.status] as PresenceStatus) || DEFAULT_CONFIG.status,
         weekdaysOnly: map[SCHEDULE_SETTINGS_KEYS.weekdaysOnly] !== undefined ? map[SCHEDULE_SETTINGS_KEYS.weekdaysOnly] === 'true' : DEFAULT_CONFIG.weekdaysOnly,
       });
     }
@@ -63,10 +55,8 @@ export function useAutoSchedule(onTriggerReset: (status: PresenceStatus) => Prom
 
     const updates = [
       { key: SCHEDULE_SETTINGS_KEYS.enabled, value: String(newConfig.enabled), updated_at: new Date().toISOString() },
-      { key: SCHEDULE_SETTINGS_KEYS.morningTime, value: newConfig.morningTime, updated_at: new Date().toISOString() },
-      { key: SCHEDULE_SETTINGS_KEYS.morningStatus, value: newConfig.morningStatus, updated_at: new Date().toISOString() },
-      { key: SCHEDULE_SETTINGS_KEYS.eveningTime, value: newConfig.eveningTime, updated_at: new Date().toISOString() },
-      { key: SCHEDULE_SETTINGS_KEYS.eveningStatus, value: newConfig.eveningStatus, updated_at: new Date().toISOString() },
+      { key: SCHEDULE_SETTINGS_KEYS.time, value: newConfig.time, updated_at: new Date().toISOString() },
+      { key: SCHEDULE_SETTINGS_KEYS.status, value: newConfig.status, updated_at: new Date().toISOString() },
       { key: SCHEDULE_SETTINGS_KEYS.weekdaysOnly, value: String(newConfig.weekdaysOnly), updated_at: new Date().toISOString() },
     ];
 
@@ -94,15 +84,9 @@ export function useAutoSchedule(onTriggerReset: (status: PresenceStatus) => Prom
       const lastRunKey = `last_auto_schedule_run_${todayStr}`;
       const alreadyRan = sessionStorage.getItem(lastRunKey);
 
-      // Check morning trigger
-      if (currentTimeStr === config.morningTime && alreadyRan !== 'morning') {
-        sessionStorage.setItem(lastRunKey, 'morning');
-        void onTriggerReset(config.morningStatus);
-      }
-      // Check evening trigger
-      else if (currentTimeStr === config.eveningTime && alreadyRan !== 'evening') {
-        sessionStorage.setItem(lastRunKey, 'evening');
-        void onTriggerReset(config.eveningStatus);
+      if (currentTimeStr === config.time && alreadyRan !== 'triggered') {
+        sessionStorage.setItem(lastRunKey, 'triggered');
+        void onTriggerReset(config.status);
       }
     }, 15000);
 

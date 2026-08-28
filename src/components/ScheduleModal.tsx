@@ -16,10 +16,8 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
   onSave,
 }) => {
   const [enabled, setEnabled] = useState(config.enabled);
-  const [morningTime, setMorningTime] = useState(config.morningTime || '09:00');
-  const [morningStatus, setMorningStatus] = useState<PresenceStatus>(config.morningStatus || 'hadir');
-  const [eveningTime, setEveningTime] = useState(config.eveningTime || '18:00');
-  const [eveningStatus, setEveningStatus] = useState<PresenceStatus>(config.eveningStatus || 'off');
+  const [time, setTime] = useState(config.time || '18:00');
+  const [status, setStatus] = useState<PresenceStatus>(config.status || 'off');
   const [weekdaysOnly, setWeekdaysOnly] = useState(config.weekdaysOnly ?? true);
 
   const [isSaving, setIsSaving] = useState(false);
@@ -28,10 +26,8 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setEnabled(config.enabled);
-      setMorningTime(config.morningTime || '09:00');
-      setMorningStatus(config.morningStatus || 'hadir');
-      setEveningTime(config.eveningTime || '18:00');
-      setEveningStatus(config.eveningStatus || 'off');
+      setTime(config.time || '18:00');
+      setStatus(config.status || 'off');
       setWeekdaysOnly(config.weekdaysOnly ?? true);
       setErrorMessage(null);
     }
@@ -55,10 +51,8 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
     const result = await onSave({
       enabled,
-      morningTime,
-      morningStatus,
-      eveningTime,
-      eveningStatus,
+      time,
+      status,
       weekdaysOnly,
     });
 
@@ -89,7 +83,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
               <h2 id="schedule-dialog-title" className="font-serif text-xl font-bold text-stone-950">
                 Automated Schedule
               </h2>
-              <p className="text-xs text-stone-500">Auto-reset team status at set times</p>
+              <p className="text-xs text-stone-500">Auto-reset all statuses at a custom time</p>
             </div>
           </div>
           <button
@@ -112,7 +106,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
           <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-3.5 shadow-sm">
             <div>
               <p className="text-sm font-bold text-stone-900">Enable Schedule</p>
-              <p className="text-xs text-stone-500">Automatically switch statuses daily</p>
+              <p className="text-xs text-stone-500">Automatically switch statuses at set time</p>
             </div>
             <label className="relative inline-flex cursor-pointer items-center">
               <input
@@ -126,72 +120,30 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
           </div>
 
           <div className={`space-y-4 transition-opacity ${enabled ? 'opacity-100' : 'pointer-events-none opacity-40'}`}>
-            {/* Morning Rule */}
+            {/* Custom Rule Card */}
             <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-              <p className="mb-2.5 text-xs font-bold uppercase tracking-wider text-amber-700">
-                🌅 Morning Shift Rule
-              </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="morning-time" className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                    Time
+                  <label htmlFor="schedule-time" className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-stone-500">
+                    Trigger Time
                   </label>
                   <input
-                    id="morning-time"
+                    id="schedule-time"
                     type="time"
-                    value={morningTime}
-                    onChange={(e) => setMorningTime(e.target.value)}
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
                     required={enabled}
                     className="w-full rounded-lg border border-stone-300 bg-[#fbfaf7] px-3 py-2 text-sm font-mono font-bold text-stone-900 outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10"
                   />
                 </div>
                 <div>
-                  <label htmlFor="morning-status" className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                    Set Status To
+                  <label htmlFor="schedule-status" className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-stone-500">
+                    Set All To
                   </label>
                   <select
-                    id="morning-status"
-                    value={morningStatus}
-                    onChange={(e) => setMorningStatus(e.target.value as PresenceStatus)}
-                    className="w-full rounded-lg border border-stone-300 bg-[#fbfaf7] px-3 py-2 text-sm font-bold text-stone-900 outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10"
-                  >
-                    {statuses.map((s) => (
-                      <option key={s} value={s}>
-                        {STATUS_CONFIG[s].label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Evening Rule */}
-            <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-              <p className="mb-2.5 text-xs font-bold uppercase tracking-wider text-indigo-700">
-                🌙 Evening Shift Rule
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="evening-time" className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                    Time
-                  </label>
-                  <input
-                    id="evening-time"
-                    type="time"
-                    value={eveningTime}
-                    onChange={(e) => setEveningTime(e.target.value)}
-                    required={enabled}
-                    className="w-full rounded-lg border border-stone-300 bg-[#fbfaf7] px-3 py-2 text-sm font-mono font-bold text-stone-900 outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="evening-status" className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                    Set Status To
-                  </label>
-                  <select
-                    id="evening-status"
-                    value={eveningStatus}
-                    onChange={(e) => setEveningStatus(e.target.value as PresenceStatus)}
+                    id="schedule-status"
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as PresenceStatus)}
                     className="w-full rounded-lg border border-stone-300 bg-[#fbfaf7] px-3 py-2 text-sm font-bold text-stone-900 outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10"
                   >
                     {statuses.map((s) => (
