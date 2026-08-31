@@ -120,10 +120,23 @@ export const ROLES = [
 
 export type Role = typeof ROLES[number];
 
+export type ScheduleAction = PresenceStatus | 'restore_preset';
+
 export interface ScheduleRule {
   id: string;
   time: string;
-  status: PresenceStatus;
+  action: ScheduleAction;
   weekdaysOnly: boolean;
   enabled: boolean;
+}
+
+export interface SavedPresetMember {
+  id: string;
+  status: PresenceStatus;
+  statusNote?: string;
+}
+
+export interface PresencePreset {
+  savedAt: string;
+  members: SavedPresetMember[];
 }

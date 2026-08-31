@@ -5,11 +5,15 @@ import { PresenceStatus, ScheduleRule } from '../types';
 const RULES_KEY = 'auto_schedule_rules';
 
 const DEFAULT_RULES: ScheduleRule[] = [
-  { id: '1', time: '09:00', status: 'hadir', weekdaysOnly: true, enabled: true },
-  { id: '2', time: '18:00', status: 'off', weekdaysOnly: true, enabled: true },
+  { id: '1', time: '09:00', action: 'restore_preset', weekdaysOnly: true, enabled: true },
+  { id: '2', time: '18:00', action: 'off', weekdaysOnly: true, enabled: true },
 ];
 
-export function useAutoSchedule(onTriggerReset: (status: PresenceStatus) => Promise<void>) {
+export function useAutoSchedule(
+  onTriggerStatus: (status: PresenceStatus) => Promise<void>,
+  onRestorePreset?: () => Promise<{ success: boolean; error?: string }>,
+  onSnapshotBeforeOff?: () => Promise<{ success: boolean; error?: string }>
+) {
   const [rules, setRules] = useState<ScheduleRule[]>(DEFAULT_RULES);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -28,9 +32,17 @@ export function useAutoSchedule(onTriggerReset: (status: PresenceStatus) => Prom
 
     if (!error && data?.value) {
       try {
-        const parsed = JSON.parse(data.value) as ScheduleRule[];
+        const parsed = JSON.parse(data.value) as Array<ScheduleRule & { status?: PresenceStatus }>;
         if (Array.isArray(parsed)) {
-          setRules(parsed);
+          // ponytail: migrate legacy 'status' field to 'action' if needed
+          const migrated = parsed.map((item) => ({
+            id: item.id,
+            time: item.time,
+            action: item.action || item.status || 'hadir',
+            weekdaysOnly: item.weekdaysOnly ?? true,
+            enabled: item.enabled ?? true,
+          }));
+          setRules(migrated);
         }
       } catch {
         setRules(DEFAULT_RULES);
@@ -76,13 +88,28 @@ export function useAutoSchedule(onTriggerReset: (status: PresenceStatus) => Prom
         const runKey = `schedule_run_${rule.id}_${todayStr}`;
         if (currentTimeStr === rule.time && !sessionStorage.getItem(runKey)) {
           sessionStorage.setItem(runKey, 'true');
-          void onTriggerReset(rule.status);
+
+          if (rule.action === 'restore_preset') {
+            if (onRestorePreset) {
+              void onRestorePreset();
+            }
+          } else if (rule.action === 'off') {
+            // Auto snapshot before turning off
+            if (onSnapshotBeforeOff) {
+              void onSnapshotBeforeOff().then(() => onTriggerStatus('off'));
+            } else {
+              void onTriggerStatus('off');
+            }
+          } else {
+            void onTriggerStatus(rule.action);
+          }
         }
       });
     }, 15000);
 
     return () => clearInterval(timer);
-  }, [rules, onTriggerReset]);
+  }, [rules, onTriggerStatus, onRestorePreset, onSnapshotBeforeOff]);
 
   return { rules, isLoading, saveRules, reloadRules: loadRules };
 }
+

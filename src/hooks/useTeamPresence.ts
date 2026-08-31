@@ -158,5 +158,96 @@ export function useTeamPresence() {
     }
   };
 
-  return { members, isLoading, error, updateMemberStatus, updateAllStatus, addMember, editMember, removeMember };
+  const saveCurrentPreset = async (): Promise<{ success: boolean; error?: string }> => {
+    if (!supabase) return { success: false, error: 'Database not connected' };
+    if (members.length === 0) return { success: false, error: 'No members to save' };
+
+    const preset = {
+      savedAt: new Date().toISOString(),
+      members: members.map((m) => ({
+        id: m.id,
+        status: m.status,
+        statusNote: m.statusNote,
+      })),
+    };
+
+    const { error: saveError } = await supabase.from('app_settings').upsert({
+      key: 'saved_presence_preset',
+      value: JSON.stringify(preset),
+      updated_at: new Date().toISOString(),
+    });
+
+    if (saveError) {
+      return { success: false, error: saveError.message };
+    }
+    return { success: true };
+  };
+
+  const restoreSavedPreset = async (): Promise<{ success: boolean; count?: number; error?: string }> => {
+    if (!supabase) return { success: false, error: 'Database not connected' };
+
+    const { data, error: fetchError } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'saved_presence_preset')
+      .maybeSingle();
+
+    if (fetchError || !data?.value) {
+      return { success: false, error: 'No saved preset found.' };
+    }
+
+    try {
+      const preset = JSON.parse(data.value) as { members: Array<{ id: string; status: PresenceStatus; statusNote?: string }> };
+      if (!Array.isArray(preset.members) || preset.members.length === 0) {
+        return { success: false, error: 'Preset contains no member data.' };
+      }
+
+      const presetMap = new Map(preset.members.map((item) => [item.id, item]));
+      const updatedAt = new Date().toISOString();
+
+      // Optimistically update local state
+      setMembers((current) =>
+        current.map((member) => {
+          const saved = presetMap.get(member.id);
+          if (!saved) return member;
+          return {
+            ...member,
+            status: saved.status,
+            statusNote: saved.statusNote !== undefined ? saved.statusNote : member.statusNote,
+            updatedAt,
+          };
+        })
+      );
+
+      // Perform updates in database
+      const updates = preset.members.map((item) =>
+        supabase!
+          .from('team_members')
+          .update({
+            status: item.status,
+            status_note: item.statusNote || null,
+            updated_at: updatedAt,
+          })
+          .eq('id', item.id)
+      );
+
+      await Promise.all(updates);
+      return { success: true, count: preset.members.length };
+    } catch {
+      return { success: false, error: 'Failed to parse saved preset.' };
+    }
+  };
+
+  return {
+    members,
+    isLoading,
+    error,
+    updateMemberStatus,
+    updateAllStatus,
+    saveCurrentPreset,
+    restoreSavedPreset,
+    addMember,
+    editMember,
+    removeMember,
+  };
 }

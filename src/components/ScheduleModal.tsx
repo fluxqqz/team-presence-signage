@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Clock, Plus, Save, Trash2, X } from 'lucide-react';
-import { PresenceStatus, STATUS_CONFIG, ScheduleRule } from '../types';
+import { PresenceStatus, STATUS_CONFIG, ScheduleAction, ScheduleRule } from '../types';
 
 interface ScheduleModalProps {
   isOpen: boolean;
@@ -21,10 +21,14 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setRules(initialRules.length > 0 ? initialRules : [
-        { id: '1', time: '09:00', status: 'hadir', weekdaysOnly: true, enabled: true },
-        { id: '2', time: '18:00', status: 'off', weekdaysOnly: true, enabled: true },
-      ]);
+      setRules(
+        initialRules.length > 0
+          ? initialRules
+          : [
+              { id: '1', time: '09:00', action: 'restore_preset', weekdaysOnly: true, enabled: true },
+              { id: '2', time: '18:00', action: 'off', weekdaysOnly: true, enabled: true },
+            ]
+      );
       setErrorMessage(null);
     }
   }, [initialRules, isOpen]);
@@ -44,7 +48,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     const newRule: ScheduleRule = {
       id: String(Date.now()),
       time: '12:00',
-      status: 'hadir',
+      action: 'hadir',
       weekdaysOnly: true,
       enabled: true,
     };
@@ -93,7 +97,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
               <h2 id="schedule-dialog-title" className="font-serif text-xl font-bold text-stone-950">
                 Automated Schedules
               </h2>
-              <p className="text-xs text-stone-500">Auto-reset team status at custom times</p>
+              <p className="text-xs text-stone-500">Auto-reset or restore team statuses at set times</p>
             </div>
           </div>
           <button
@@ -116,7 +120,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
             {rules.length === 0 ? (
               <div className="rounded-xl border border-dashed border-stone-300 bg-white/60 p-8 text-center text-stone-500">
                 <p className="text-sm font-semibold">No schedule rules added yet.</p>
-                <p className="mt-1 text-xs">Click "+ Add Schedule" below to create one.</p>
+                <p className="mt-1 text-xs">Click "+ Add Another Schedule" below to create one.</p>
               </div>
             ) : (
               rules.map((rule, idx) => (
@@ -155,7 +159,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                   <div className="grid grid-cols-2 gap-2.5">
                     <div>
                       <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                        Time
+                        Trigger Time
                       </label>
                       <input
                         type="time"
@@ -167,16 +171,17 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                     </div>
                     <div>
                       <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                        Set All To
+                        Action
                       </label>
                       <select
-                        value={rule.status}
-                        onChange={(e) => handleUpdateRule(rule.id, { status: e.target.value as PresenceStatus })}
+                        value={rule.action}
+                        onChange={(e) => handleUpdateRule(rule.id, { action: e.target.value as ScheduleAction })}
                         className="w-full rounded-lg border border-stone-300 bg-[#fbfaf7] px-2.5 py-1.5 text-xs font-bold text-stone-900 outline-none focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10"
                       >
+                        <option value="restore_preset">🔄 Restore Saved Preset</option>
                         {statuses.map((s) => (
                           <option key={s} value={s}>
-                            {STATUS_CONFIG[s].label}
+                            Set All to: {STATUS_CONFIG[s].label}
                           </option>
                         ))}
                       </select>
@@ -228,3 +233,4 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     </div>
   );
 };
+

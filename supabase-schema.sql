@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS public.app_settings (
 INSERT INTO public.app_settings (key, value)
 VALUES 
   ('admin_pin', '1234'),
-  ('auto_schedule_rules', '[{"id":"1","time":"09:00","status":"hadir","weekdaysOnly":true,"enabled":true},{"id":"2","time":"18:00","status":"off","weekdaysOnly":true,"enabled":true}]')
+  ('auto_schedule_rules', '[{"id":"1","time":"09:00","action":"restore_preset","weekdaysOnly":true,"enabled":true},{"id":"2","time":"18:00","action":"off","weekdaysOnly":true,"enabled":true}]')
 ON CONFLICT (key) DO NOTHING;
 
 

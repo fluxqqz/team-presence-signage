@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { ChevronDown, Search, SlidersHorizontal, Users2 } from 'lucide-react';
+import { Bookmark, ChevronDown, RefreshCw, Search, SlidersHorizontal, Users2 } from 'lucide-react';
 import { Header } from './components/Header';
 import { StatsBar } from './components/StatsBar';
 import { DepartmentTabs } from './components/DepartmentTabs';
@@ -24,8 +24,24 @@ export function App() {
     setError: setAuthError,
   } = useAdminAuth();
 
-  const { members, isLoading, error, updateMemberStatus, updateAllStatus, addMember, editMember, removeMember } = useTeamPresence();
-  const { rules: scheduleRules, saveRules: saveScheduleRules } = useAutoSchedule(updateAllStatus);
+  const {
+    members,
+    isLoading,
+    error,
+    updateMemberStatus,
+    updateAllStatus,
+    saveCurrentPreset,
+    restoreSavedPreset,
+    addMember,
+    editMember,
+    removeMember,
+  } = useTeamPresence();
+
+  const { rules: scheduleRules, saveRules: saveScheduleRules } = useAutoSchedule(
+    updateAllStatus,
+    restoreSavedPreset,
+    saveCurrentPreset
+  );
 
   const [activeStatusFilter, setActiveStatusFilter] = useState<PresenceStatus | 'all'>('all');
   const [activeDept, setActiveDept] = useState('All');
@@ -35,6 +51,7 @@ export function App() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [isSetAllOpen, setIsSetAllOpen] = useState(false);
+  const [presetToast, setPresetToast] = useState<string | null>(null);
   const setAllRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -87,6 +104,23 @@ export function App() {
 
   const openAddModal = () => { setEditingMember(null); setIsModalOpen(true); };
   const openEditModal = (member: TeamMember) => { setEditingMember(member); setIsModalOpen(true); };
+
+  const showPresetResult = (message: string) => {
+    setPresetToast(message);
+    window.setTimeout(() => setPresetToast(null), 3000);
+  };
+
+  const handleSavePreset = async () => {
+    const result = await saveCurrentPreset();
+    showPresetResult(result.success ? 'Today\'s preset saved.' : result.error || 'Could not save preset.');
+    setIsSetAllOpen(false);
+  };
+
+  const handleRestorePreset = async () => {
+    const result = await restoreSavedPreset();
+    showPresetResult(result.success ? `Preset restored for ${result.count ?? 0} people.` : result.error || 'Could not restore preset.');
+    setIsSetAllOpen(false);
+  };
 
   if (!isAuthenticated) {
     return (
@@ -145,24 +179,34 @@ export function App() {
                       <div className="border-b border-stone-100 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-stone-400">
                         Set all to:
                       </div>
-                      {(Object.keys(STATUS_CONFIG) as PresenceStatus[]).map((status) => {
-                        const config = STATUS_CONFIG[status];
-                        return (
-                          <button
-                            key={status}
-                            type="button"
-                            onClick={() => {
-                              setIsSetAllOpen(false);
-                              updateAllStatus(status);
-                            }}
-                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs font-semibold text-stone-800 transition hover:bg-stone-50"
-                          >
-                            <span className={`h-2.5 w-2.5 rounded-full ${config.dotClass}`} />
-                            <span>{config.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                       {(Object.keys(STATUS_CONFIG) as PresenceStatus[]).map((status) => {
+                         const config = STATUS_CONFIG[status];
+                         return (
+                           <button
+                             key={status}
+                             type="button"
+                             onClick={() => {
+                               setIsSetAllOpen(false);
+                               updateAllStatus(status);
+                             }}
+                             className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs font-semibold text-stone-800 transition hover:bg-stone-50"
+                           >
+                             <span className={`h-2.5 w-2.5 rounded-full ${config.dotClass}`} />
+                             <span>{config.label}</span>
+                           </button>
+                         );
+                       })}
+                       <div className="mt-1 border-t border-stone-100 pt-1">
+                         <button type="button" onClick={handleSavePreset} className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs font-semibold text-stone-700 transition hover:bg-stone-50">
+                           <Bookmark className="h-3.5 w-3.5 text-stone-500" />
+                           <span>Save today as preset</span>
+                         </button>
+                         <button type="button" onClick={handleRestorePreset} className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs font-semibold text-stone-700 transition hover:bg-stone-50">
+                           <RefreshCw className="h-3.5 w-3.5 text-stone-500" />
+                           <span>Restore saved preset</span>
+                         </button>
+                       </div>
+                     </div>
                   )}
                 </div>
               </div>
@@ -210,6 +254,7 @@ export function App() {
           </aside>
         </div>
       </main>
+      {presetToast && <div role="status" className="fixed bottom-5 left-1/2 z-[60] -translate-x-1/2 rounded-full bg-stone-900 px-4 py-2.5 text-xs font-bold text-white shadow-lg">{presetToast}</div>}
       <MemberModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={addMember} onUpdate={editMember} editingMember={editingMember} />
       <ScheduleModal isOpen={isScheduleOpen} onClose={() => setIsScheduleOpen(false)} rules={scheduleRules} onSave={saveScheduleRules} />
       <ChangePinModal isOpen={isChangePinOpen} onClose={() => setIsChangePinOpen(false)} onChangePin={changePin} />
