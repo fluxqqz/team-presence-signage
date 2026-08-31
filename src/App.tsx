@@ -196,18 +196,18 @@ export function App() {
                            </button>
                          );
                        })}
-                       <div className="mt-1 border-t border-stone-100 pt-1">
-                         <button type="button" onClick={handleSavePreset} className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs font-semibold text-stone-700 transition hover:bg-stone-50">
-                           <Bookmark className="h-3.5 w-3.5 text-stone-500" />
-                           <span>Save today as preset</span>
-                         </button>
-                         <button type="button" onClick={handleRestorePreset} className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs font-semibold text-stone-700 transition hover:bg-stone-50">
-                           <RefreshCw className="h-3.5 w-3.5 text-stone-500" />
-                           <span>Restore saved preset</span>
-                         </button>
-                       </div>
                      </div>
                   )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={handleSavePreset} className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-3.5 py-2.5 text-xs font-bold text-stone-700 shadow-sm transition hover:border-stone-400 hover:text-stone-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900" title="Save the current individual statuses as today's preset">
+                    <Bookmark className="h-3.5 w-3.5 text-stone-500" />
+                    <span>Save preset</span>
+                  </button>
+                  <button type="button" onClick={handleRestorePreset} className="inline-flex items-center gap-1.5 rounded-full border border-stone-900 bg-stone-900 px-3.5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900" title="Restore every member's saved preset status">
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    <span>Restore preset</span>
+                  </button>
                 </div>
               </div>
 
