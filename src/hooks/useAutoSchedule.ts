@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { PresenceStatus, ScheduleRule } from '../types';
-import { getScheduleDueAt } from './scheduleTiming';
+import { getDueScheduleRuns, runScheduleActions } from './scheduleTiming';
 
 const RULES_KEY = 'auto_schedule_rules';
 
@@ -18,6 +18,7 @@ export function useAutoSchedule(
   const [rules, setRules] = useState<ScheduleRule[]>(DEFAULT_RULES);
   const [isLoading, setIsLoading] = useState(true);
   const previousCheckRef = useRef<Date | null>(null);
+  const isCheckingRef = useRef(false);
 
   // Load rules from database or fallback to default
   const loadRules = useCallback(async () => {
@@ -83,40 +84,37 @@ export function useAutoSchedule(
       previousCheckRef.current = new Date(currentMinute.getTime() - 1);
     }
 
-    const checkSchedules = () => {
+    const checkSchedules = async () => {
       const previousCheck = previousCheckRef.current;
-      if (!previousCheck) return;
-      const now = new Date();
+      if (!previousCheck || isCheckingRef.current) return;
 
-      rules.forEach((rule) => {
-        const dueAt = getScheduleDueAt(rule, previousCheck, now);
-        if (!dueAt) return;
+      isCheckingRef.current = true;
+      try {
+        const now = new Date();
+        const pendingRules: ScheduleRule[] = [];
 
-        const runDate = `${dueAt.getFullYear()}-${String(dueAt.getMonth() + 1).padStart(2, '0')}-${String(dueAt.getDate()).padStart(2, '0')}`;
-        const runKey = `schedule_run_${rule.id}_${runDate}`;
-        if (sessionStorage.getItem(runKey)) return;
-        sessionStorage.setItem(runKey, 'true');
+        for (const { rule, dueAt } of getDueScheduleRuns(rules, previousCheck, now)) {
+          const runDate = `${dueAt.getFullYear()}-${String(dueAt.getMonth() + 1).padStart(2, '0')}-${String(dueAt.getDate()).padStart(2, '0')}`;
+          const runKey = `schedule_run_${rule.id}_${runDate}`;
+          if (sessionStorage.getItem(runKey)) continue;
 
-        if (rule.action === 'restore_preset') {
-          if (onRestorePreset) {
-            void onRestorePreset();
-          }
-        } else if (rule.action === 'off') {
-          if (onSnapshotBeforeOff) {
-            void onSnapshotBeforeOff().then(() => onTriggerStatus('off'));
-          } else {
-            void onTriggerStatus('off');
-          }
-        } else {
-          void onTriggerStatus(rule.action);
+          sessionStorage.setItem(runKey, 'true');
+          pendingRules.push(rule);
         }
-      });
 
-      previousCheckRef.current = now;
+        previousCheckRef.current = now;
+        await runScheduleActions(pendingRules, {
+          onTriggerStatus,
+          onRestorePreset,
+          onSnapshotBeforeOff,
+        });
+      } finally {
+        isCheckingRef.current = false;
+      }
     };
 
-    checkSchedules();
-    const timer = setInterval(checkSchedules, 15000);
+    void checkSchedules();
+    const timer = setInterval(() => void checkSchedules(), 15000);
     return () => clearInterval(timer);
   }, [isLoading, rules, onTriggerStatus, onRestorePreset, onSnapshotBeforeOff]);
 
