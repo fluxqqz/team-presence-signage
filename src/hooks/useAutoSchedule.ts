@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { PresenceStatus, ScheduleRule } from '../types';
+import type { PresenceStatus, ScheduleRule } from '../types';
+import { getScheduleDueAt } from './scheduleTiming';
 
 const RULES_KEY = 'auto_schedule_rules';
 
@@ -16,6 +17,7 @@ export function useAutoSchedule(
 ) {
   const [rules, setRules] = useState<ScheduleRule[]>(DEFAULT_RULES);
   const [isLoading, setIsLoading] = useState(true);
+  const previousCheckRef = useRef<Date | null>(null);
 
   // Load rules from database or fallback to default
   const loadRules = useCallback(async () => {
@@ -72,43 +74,51 @@ export function useAutoSchedule(
     return { success: true };
   };
 
-  // Automated trigger loop for all active rules
+  // Check immediately, then catch rules whose scheduled minute passes between timer ticks.
   useEffect(() => {
-    const timer = setInterval(() => {
+    if (isLoading) return;
+    if (!previousCheckRef.current) {
+      const currentMinute = new Date();
+      currentMinute.setSeconds(0, 0);
+      previousCheckRef.current = new Date(currentMinute.getTime() - 1);
+    }
+
+    const checkSchedules = () => {
+      const previousCheck = previousCheckRef.current;
+      if (!previousCheck) return;
       const now = new Date();
-      const day = now.getDay();
-      const isWeekday = day >= 1 && day <= 5;
-      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      const todayStr = now.toISOString().slice(0, 10);
 
       rules.forEach((rule) => {
-        if (!rule.enabled) return;
-        if (rule.weekdaysOnly && !isWeekday) return;
+        const dueAt = getScheduleDueAt(rule, previousCheck, now);
+        if (!dueAt) return;
 
-        const runKey = `schedule_run_${rule.id}_${todayStr}`;
-        if (currentTimeStr === rule.time && !sessionStorage.getItem(runKey)) {
-          sessionStorage.setItem(runKey, 'true');
+        const runDate = `${dueAt.getFullYear()}-${String(dueAt.getMonth() + 1).padStart(2, '0')}-${String(dueAt.getDate()).padStart(2, '0')}`;
+        const runKey = `schedule_run_${rule.id}_${runDate}`;
+        if (sessionStorage.getItem(runKey)) return;
+        sessionStorage.setItem(runKey, 'true');
 
-          if (rule.action === 'restore_preset') {
-            if (onRestorePreset) {
-              void onRestorePreset();
-            }
-          } else if (rule.action === 'off') {
-            // Auto snapshot before turning off
-            if (onSnapshotBeforeOff) {
-              void onSnapshotBeforeOff().then(() => onTriggerStatus('off'));
-            } else {
-              void onTriggerStatus('off');
-            }
-          } else {
-            void onTriggerStatus(rule.action);
+        if (rule.action === 'restore_preset') {
+          if (onRestorePreset) {
+            void onRestorePreset();
           }
+        } else if (rule.action === 'off') {
+          if (onSnapshotBeforeOff) {
+            void onSnapshotBeforeOff().then(() => onTriggerStatus('off'));
+          } else {
+            void onTriggerStatus('off');
+          }
+        } else {
+          void onTriggerStatus(rule.action);
         }
       });
-    }, 15000);
 
+      previousCheckRef.current = now;
+    };
+
+    checkSchedules();
+    const timer = setInterval(checkSchedules, 15000);
     return () => clearInterval(timer);
-  }, [rules, onTriggerStatus, onRestorePreset, onSnapshotBeforeOff]);
+  }, [isLoading, rules, onTriggerStatus, onRestorePreset, onSnapshotBeforeOff]);
 
   return { rules, isLoading, saveRules, reloadRules: loadRules };
 }
