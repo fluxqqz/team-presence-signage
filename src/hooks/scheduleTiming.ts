@@ -51,6 +51,14 @@ export function getDueScheduleRuns(
   return runs.sort((a, b) => a.dueAt.getTime() - b.dueAt.getTime());
 }
 
+export function getScheduleRunKey(
+  rule: Pick<ScheduleRule, 'id' | 'time'>,
+  dueAt: Date
+): string {
+  const runDate = `${dueAt.getFullYear()}-${String(dueAt.getMonth() + 1).padStart(2, '0')}-${String(dueAt.getDate()).padStart(2, '0')}`;
+  return `schedule_run_${rule.id}_${rule.time}_${runDate}`;
+}
+
 export async function runScheduleActions(
   rules: readonly ScheduledAction[],
   { onTriggerStatus, onRestorePreset, onSnapshotBeforeOff }: ScheduleActionHandlers

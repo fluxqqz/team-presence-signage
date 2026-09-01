@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getDueScheduleRuns, getScheduleDueAt, runScheduleActions } from '../src/hooks/scheduleTiming.ts';
+import { getDueScheduleRuns, getScheduleDueAt, getScheduleRunKey, runScheduleActions } from '../src/hooks/scheduleTiming.ts';
 
 test('runs a schedule whose time passed between timer checks', () => {
   const dueAt = getScheduleDueAt(
@@ -90,4 +90,17 @@ test('waits for each caught-up action before running the next one', async () => 
   );
 
   assert.deepEqual(events, ['snapshot', 'off', 'hadir']);
+});
+
+test('treats an edited time as a new schedule occurrence', () => {
+  const dueAt = new Date(2026, 8, 2, 1, 3);
+
+  assert.notEqual(
+    getScheduleRunKey({ id: 'rule-1', time: '01:00' }, dueAt),
+    getScheduleRunKey({ id: 'rule-1', time: '01:03' }, dueAt)
+  );
+  assert.equal(
+    getScheduleRunKey({ id: 'rule-1', time: '01:03' }, dueAt),
+    getScheduleRunKey({ id: 'rule-1', time: '01:03' }, dueAt)
+  );
 });

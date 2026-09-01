@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { PresenceStatus, ScheduleRule } from '../types';
-import { getDueScheduleRuns, runScheduleActions } from './scheduleTiming';
+import { getDueScheduleRuns, getScheduleRunKey, runScheduleActions } from './scheduleTiming';
 
 const RULES_KEY = 'auto_schedule_rules';
 
@@ -94,8 +94,7 @@ export function useAutoSchedule(
         const pendingRules: ScheduleRule[] = [];
 
         for (const { rule, dueAt } of getDueScheduleRuns(rules, previousCheck, now)) {
-          const runDate = `${dueAt.getFullYear()}-${String(dueAt.getMonth() + 1).padStart(2, '0')}-${String(dueAt.getDate()).padStart(2, '0')}`;
-          const runKey = `schedule_run_${rule.id}_${runDate}`;
+          const runKey = getScheduleRunKey(rule, dueAt);
           if (sessionStorage.getItem(runKey)) continue;
 
           sessionStorage.setItem(runKey, 'true');
