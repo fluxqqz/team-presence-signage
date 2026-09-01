@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { Bookmark, ChevronDown, RefreshCw, Search, SlidersHorizontal, Users2 } from 'lucide-react';
+import { Bookmark, ChevronDown, FolderOpen, Search, SlidersHorizontal, Users2 } from 'lucide-react';
 import { Header } from './components/Header';
 import { StatsBar } from './components/StatsBar';
 import { DepartmentTabs } from './components/DepartmentTabs';
@@ -204,9 +204,9 @@ export function App() {
                     <Bookmark className="h-3.5 w-3.5 text-stone-500" />
                     <span>Save preset</span>
                   </button>
-                  <button type="button" onClick={handleRestorePreset} className="inline-flex items-center gap-1.5 rounded-full border border-stone-900 bg-stone-900 px-3.5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900" title="Restore every member's saved preset status">
-                    <RefreshCw className="h-3.5 w-3.5" />
-                    <span>Restore preset</span>
+                  <button type="button" onClick={handleRestorePreset} className="inline-flex items-center gap-1.5 rounded-full border border-stone-900 bg-stone-900 px-3.5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900" title="Load every member's saved preset status">
+                    <FolderOpen className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>Load saved preset</span>
                   </button>
                 </div>
               </div>
