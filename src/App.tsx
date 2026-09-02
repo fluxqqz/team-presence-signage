@@ -37,11 +37,7 @@ export function App() {
     removeMember,
   } = useTeamPresence();
 
-  const { rules: scheduleRules, saveRules: saveScheduleRules } = useAutoSchedule(
-    updateAllStatus,
-    restoreSavedPreset,
-    saveCurrentPreset
-  );
+  const { rules: scheduleRules, saveRules: saveScheduleRules } = useAutoSchedule();
 
   const [activeStatusFilter, setActiveStatusFilter] = useState<PresenceStatus | 'all'>('all');
   const [activeDept, setActiveDept] = useState('All');
